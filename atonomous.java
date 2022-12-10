@@ -123,7 +123,7 @@ public class JavaAutonomous extends LinearOpMode {
       }*/
       while (Step_ == 1) {
         // go forward 1 tile
-        drive((Tile_length - Inch * 2) * 1, (Tile_length - Inch * 2) * 1, (Tile_length - Inch * 2) * 1, (Tile_length - Inch * 2) * 1, 0.25, 0);
+        drive((Tile_length - Inch * 2) * 1, (Tile_length - Inch * 2) * 1, (Tile_length - Inch * 2) * 1, (Tile_length - Inch * 2) * 1, 0.15, 0);
         Step_ = 2;
       }
       while (Step_ == 2) {
@@ -134,12 +134,12 @@ public class JavaAutonomous extends LinearOpMode {
       while (Step_ == 3) {
         Final_Hue = Permanent_color / 25;
         check_for_hue_to_color();
-        drive(Inch * 7, Inch * 7, Inch * 7, Inch * 7, speed_value, 0);
+        drive(Inch * 5, Inch * 5, Inch * 5, Inch * 5, speed_value, 0);
         Step_ = 4;
       }
       while (Step_ == 4) {
         if (Final_Color.equals("Blue") || Final_Color.equals("Purple")) {
-          driveStrafe(Shift * 1, Shift * -1, Shift * -1, Shift * 1, 0.5);
+          driveStrafe(Shift * 1, Shift * -1, Shift * -1, Shift * 1, 0.25);
           drive(Inch * 3, Inch * 3, Inch * 3, Inch * 3, 1, 0);
           Step_ = 5;
           //requestOpModeStop();
@@ -150,7 +150,7 @@ public class JavaAutonomous extends LinearOpMode {
         } 
         else if (Final_Color.equals("Red")) {
           drive(Inch * -1, Inch * -1, Inch * -1, Inch * -1, 1, 0);
-          driveStrafe(Shift * -1, Shift * 1, Shift * 1, Shift * -1, 0.2);
+          driveStrafe(Shift * -1, Shift * 1, Shift * 1, Shift * -1, 0.25);
           drive(Inch * 4, Inch * 4, Inch * 4, Inch * 4, 1, 0);
           Step_ = 5;
           //requestOpModeStop();
