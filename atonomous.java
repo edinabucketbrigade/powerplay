@@ -155,12 +155,12 @@ public class JavaAutonomous extends LinearOpMode {
           Step_ = 5;
           //requestOpModeStop();
         }
-        while (Step_ == 5){
+        /*while (Step_ == 5){
           if (active == 0) {
             requestOpModeStop();
             active = 1;
           }
-        }
+        }*/
       }
       telemetry.update();
     }
