@@ -31,7 +31,7 @@ public class JavaAutonomousCamera extends LinearOpMode {
     private DcMotor FrontleftAsDcMotor;
     private DcMotor Frontright;
     private Servo GripperServo;
-    private ColorSensor sensorColorRange;
+    //private ColorSensor sensorColorRange;
 
 
     int blpos;
@@ -106,7 +106,6 @@ public class JavaAutonomousCamera extends LinearOpMode {
         FrontleftAsDcMotor = hardwareMap.get(DcMotor.class, "Frontleft");
         Frontright = hardwareMap.get(DcMotor.class, "Frontright");
         GripperServo = hardwareMap.get(Servo.class, "GripperServo");
-        sensorColorRange = hardwareMap.get(ColorSensor.class, "sensorColorRange");
 
         // Put initialization blocks here.
         Permanent_color = 0;
@@ -135,12 +134,11 @@ public class JavaAutonomousCamera extends LinearOpMode {
         while (opModeIsActive()) {
             while (Step_ == 1) {
                 // go forward 1 tile
+                GripperServo.setPosition(0.71);
                 parkLocation = getParkLocation();
                 Step_ = 2;
             }
             while (Step_ == 2) {
-                // Color looking
-                //Look_for_color_values(25);
                 drive(Tile_length + Inch * 5, Tile_length + Inch * 5, Tile_length + Inch * 5, Tile_length + Inch * 5, speed_value);
                 Step_ = 3;
             }
