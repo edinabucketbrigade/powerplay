@@ -18,7 +18,7 @@ import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 
-@Autonomous(name = "JavaAutonomousCamera", group = "Auto")
+@Autonomous(name = "Java Autonomous Camera", group = "Auto")
 public class JavaAutonomousCamera extends LinearOpMode {
 
     SleeveDetection sleeveDetection;
@@ -30,8 +30,8 @@ public class JavaAutonomousCamera extends LinearOpMode {
     private DcMotor Backright;
     private DcMotor FrontleftAsDcMotor;
     private DcMotor Frontright;
-    private Servo GripperServoAsServo;
-    private ColorSensor sensorColorRangeAsREVColorRangeSensor;
+    private Servo GripperServo;
+    private ColorSensor sensorColorRange;
 
 
     int blpos;
@@ -105,13 +105,13 @@ public class JavaAutonomousCamera extends LinearOpMode {
         Backright = hardwareMap.get(DcMotor.class, "Backright");
         FrontleftAsDcMotor = hardwareMap.get(DcMotor.class, "Frontleft");
         Frontright = hardwareMap.get(DcMotor.class, "Frontright");
-        GripperServoAsServo = hardwareMap.get(Servo.class, "GripperServo");
-        sensorColorRangeAsREVColorRangeSensor = hardwareMap.get(ColorSensor.class, "sensorColorRange");
+        GripperServo = hardwareMap.get(Servo.class, "GripperServo");
+        sensorColorRange = hardwareMap.get(ColorSensor.class, "sensorColorRange");
 
         // Put initialization blocks here.
         Permanent_color = 0;
         Final_Hue = 0;
-        GripperServoAsServo.setPosition(0.71);
+        GripperServo.setPosition(0.71);
         BackleftAsDcMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         Backright.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         FrontleftAsDcMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
