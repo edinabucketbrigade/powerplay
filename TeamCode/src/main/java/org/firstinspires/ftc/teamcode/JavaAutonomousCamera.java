@@ -33,7 +33,6 @@ public class JavaAutonomousCamera extends LinearOpMode {
     private Servo GripperServo;
     //private ColorSensor sensorColorRange;
 
-
     int blpos;
     int brpos;
     int Permanent_color;
@@ -81,7 +80,7 @@ public class JavaAutonomousCamera extends LinearOpMode {
         camera.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
             @Override
             public void onOpened() {
-                camera.startStreaming(320, 240, OpenCvCameraRotation.SIDEWAYS_LEFT);
+                camera.startStreaming(320, 240, OpenCvCameraRotation.SIDEWAYS_RIGHT);
             }
 
             @Override
@@ -117,7 +116,7 @@ public class JavaAutonomousCamera extends LinearOpMode {
         Frontright.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         BackleftAsDcMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         FrontleftAsDcMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        Inch = 76.9230769231;
+        Inch = 38.4615384616;
         Foot = Inch * 12;
         Tile_length = Inch * 23;
         my_1_2_Tile_Length = Tile_length / 2;
