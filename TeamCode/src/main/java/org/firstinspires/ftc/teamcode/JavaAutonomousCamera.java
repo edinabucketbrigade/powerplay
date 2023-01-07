@@ -1,22 +1,19 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.arcrobotics.ftclib.hardware.motors.MotorEx;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
-import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
-import com.qualcomm.robotcore.hardware.NormalizedRGBA;
-import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
+
+import java.util.List;
 
 @Autonomous(name = "Java Autonomous Camera", group = "Auto")
 public class JavaAutonomousCamera extends LinearOpMode {
@@ -35,12 +32,10 @@ public class JavaAutonomousCamera extends LinearOpMode {
 
     int blpos;
     int brpos;
-    int Permanent_color;
-    String Final_Color;
     int flpos;
-    int Final_Hue;
     int frpos;
     int Step_;
+
 
     /**
      * Describe this function...
@@ -72,6 +67,12 @@ public class JavaAutonomousCamera extends LinearOpMode {
      */
     @Override
     public void runOpMode() {
+        List<LynxModule> allhubs = hardwareMap.getAll(LynxModule.class);
+
+        for (LynxModule module : allhubs) {
+            module.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+        }
+
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         camera = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, webcamName), cameraMonitorViewId);
         sleeveDetection = new SleeveDetection();
@@ -89,7 +90,8 @@ public class JavaAutonomousCamera extends LinearOpMode {
         });
 
         while (!isStarted()) {
-            telemetry.addData("ROTATION: ", sleeveDetection.getPosition());
+            parkLocation = getParkLocation();
+            telemetry.addData("Park Location: ", parkLocation);
             telemetry.update();
         }
 
@@ -107,9 +109,6 @@ public class JavaAutonomousCamera extends LinearOpMode {
         GripperServo = hardwareMap.get(Servo.class, "GripperServo");
 
         // Put initialization blocks here.
-        Permanent_color = 0;
-        Final_Hue = 0;
-        GripperServo.setPosition(0.71);
         BackleftAsDcMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         Backright.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         FrontleftAsDcMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -125,20 +124,19 @@ public class JavaAutonomousCamera extends LinearOpMode {
         flpos = 0;
         frpos = 0;
         Step_ = 1;
-        Final_Color = "Blank";
         Shift = Tile_length + Inch * 5;
         speed_value = .25;
+        GripperServo.setPosition(0.71);
         waitForStart();
         // move away from wall to the left
         while (opModeIsActive()) {
             while (Step_ == 1) {
                 // go forward 1 tile
-                GripperServo.setPosition(0.71);
-                parkLocation = getParkLocation();
+                GripperServo.setPosition(0);
                 Step_ = 2;
             }
             while (Step_ == 2) {
-                drive(Tile_length + Inch * 5, Tile_length + Inch * 5, Tile_length + Inch * 5, Tile_length + Inch * 5, speed_value);
+                drive(Tile_length, Tile_length, Tile_length, Tile_length, speed_value);
                 Step_ = 3;
             }
             while (Step_ == 3) {
