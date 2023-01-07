@@ -445,7 +445,7 @@ public class AutoFTCLib extends LinearOpMode {
     /**
      * Display the various control parameters while driving
      *
-     * @param straight Set to true if we are driving straight, and the encoder positions should be included in the telemetry.
+     * @param straight Set to true if we are driving straight, and the encoder positions should be included in the telemetry..
      */
     private void sendTelemetry(boolean straight) {
         telemetry.addData("Path Segment", pathSegment);
