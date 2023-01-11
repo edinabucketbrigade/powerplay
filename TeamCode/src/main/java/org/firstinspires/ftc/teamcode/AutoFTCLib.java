@@ -33,7 +33,7 @@ public class AutoFTCLib extends LinearOpMode {
     // This is gearing DOWN for less speed and more torque.
     // For gearing UP, use a gear ratio less than 1.0. Note this will affect the direction of wheel rotation.
     static final double DRIVE_GEAR_REDUCTION = 1.0;     // No External Gearing.
-    static final double WHEEL_DIAMETER_INCHES = 4.0;     // For figuring circumference
+    static final double WHEEL_DIAMETER_INCHES = 3.778;     // For figuring circumference
     static final double DRIVE_SPEED = 0.4;     // Max driving speed for better distance accuracy.
     static final double TURN_SPEED = 0.4;
     // Define the Proportional control coefficient (or GAIN) for "heading control".
@@ -65,8 +65,8 @@ public class AutoFTCLib extends LinearOpMode {
     private SimpleMotorFeedforward simpleFeedForward;
     private SimpleServo gripperServo;
     // These are set in init.
-    private double countsPerMotorRev = 0;
-    private double motorRPM = 0;
+    private double countsPerMotorRev = 480;
+    private double motorRPM = 300;
     private double countsPerInch = 0;
 
     private int backLeftTarget = 0;
@@ -103,6 +103,7 @@ public class AutoFTCLib extends LinearOpMode {
         // Now initialize the IMU with this mounting orientation
         // Note: if you choose two conflicting directions, this initialization will cause a code exception.
         imu.initialize(new IMU.Parameters(orientationOnRobot));
+        imu.resetYaw();
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         camera = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, WEB_CAM_NAME), cameraMonitorViewId);
@@ -132,11 +133,13 @@ public class AutoFTCLib extends LinearOpMode {
 
         backLeftDrive.setInverted(true);
         frontLeftDrive.setInverted(true);
+        backRightDrive.setInverted(true);
+        frontRightDrive.setInverted(true);
 
         driveRobot = new MecanumDrive(frontLeftDrive, frontRightDrive, backLeftDrive, backRightDrive);
 
-        countsPerMotorRev = backLeftDrive.ACHIEVABLE_MAX_TICKS_PER_SECOND;
-        motorRPM = backLeftDrive.getMaxRPM();
+       // countsPerMotorRev = backLeftDrive.ACHIEVABLE_MAX_TICKS_PER_SECOND;
+        // motorRPM = backLeftDrive.getMaxRPM();
         countsPerInch = (countsPerMotorRev * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
 
         gripperServo = new SimpleServo(hardwareMap, "GripperServo", GRIPPER_MIN_ANGLE, GRIPPER_MAX_ANGLE);
@@ -149,7 +152,6 @@ public class AutoFTCLib extends LinearOpMode {
             telemetry.addData("Park Location: ", parkLocation);
             telemetry.update();
         }
-
         pathSegment = 1;
 
         waitForStart();
@@ -158,7 +160,7 @@ public class AutoFTCLib extends LinearOpMode {
             switch (pathSegment) {
                 case 1:
                     driveStraight(DRIVE_SPEED, 24, 0, 3);
-                    pathSegment = 3;
+                    pathSegment = 2;
                     break;
                 case 2:
                     if (parkLocation == SleeveDetection.ParkingPosition.LEFT) {
@@ -176,6 +178,8 @@ public class AutoFTCLib extends LinearOpMode {
                     pathSegment = 3;
                     break;
                 case 3:
+                    while (!isStopRequested()) {
+                    }
                     telemetry.addData("Status", "Path complete.");
                     telemetry.update();
                     break;
@@ -269,6 +273,10 @@ public class AutoFTCLib extends LinearOpMode {
             }
 
             // Stop all motion & Turn off RUN_TO_POSITION
+//            frontRightDrive.stopMotor();
+//            backRightDrive.stopMotor();
+//            frontLeftDrive.stopMotor();
+//            backLeftDrive.stopMotor();
             moveRobot(0, 0);
         }
     }
@@ -454,6 +462,7 @@ public class AutoFTCLib extends LinearOpMode {
             telemetry.addData("Target Pos L:R", "%7d:%7d", backLeftTarget, backRightTarget);
             telemetry.addData("Actual Pos L:R", "%7d:%7d", backLeftDrive.getCurrentPosition(),
                     backRightDrive.getCurrentPosition());
+            telemetry.addData("CPI", countsPerInch);
         } else {
             telemetry.addData("Motion", "Turning");
         }
