@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 
+import com.arcrobotics.ftclib.controller.wpilibcontroller.ElevatorFeedforward;
 import com.arcrobotics.ftclib.controller.wpilibcontroller.SimpleMotorFeedforward;
 import com.arcrobotics.ftclib.drivebase.MecanumDrive;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
@@ -49,7 +50,16 @@ public class AutoFTCLib extends LinearOpMode {
     // How close must the heading get to the target before moving to next step.
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
     static final double HEADING_THRESHOLD = 1.0;
-    // These set the range for the gripper servo.
+//    arm variables
+    static final double ARM_DRIVE_REDUCTION = .20;
+    static final double ARM_WHEEL_DIAMETER_INCHES = 2;
+    static final int LOW_JUNCTION = 14;
+    static final int MEDIUM_JUNCTION = 24;
+    static final int HIGH_JUNCTION = 34;
+    static final int HOME_POSITION = 1;
+    static final int CONE_HEIGHT = 5;
+    static final int ADJUST_ARM_INCREMENT = 1;
+//     These set the range for the gripper servo.
     static final double GRIPPER_MIN_ANGLE = 0;
     static final double GRIPPER_MAX_ANGLE = 45;
     // These set the open and close positions
@@ -61,6 +71,7 @@ public class AutoFTCLib extends LinearOpMode {
     private SleeveDetection sleeveDetection;
     private OpenCvCamera camera;
     private IMU imu;
+    private GamepadEx gamePadArm;
     private GamepadEx gamePadDrive;
     private String WEB_CAM_NAME = "webcam1";
     private SleeveDetection.ParkingPosition parkLocation;
@@ -68,11 +79,22 @@ public class AutoFTCLib extends LinearOpMode {
     private MotorEx backRightDrive;
     private MotorEx frontLeftDrive;
     private MotorEx frontRightDrive;
+    private MotorEx armMotor = null;
+    private ElevatorFeedforward armFeedForward;
     private MotorGroup leftMotors;
     private MotorGroup rightMotors;
     private MecanumDrive driveRobot;
     private SimpleMotorFeedforward simpleFeedForward;
     private SimpleServo gripperServo;
+
+    static final double MAX_POWER = 0.4;
+    private int armTarget = 0;
+    private int armPosition = 0;
+    private double armVelocity = 0;
+    private double armDistance = 0;
+    private double armAcceleration = 0;
+    private double armCountsPerMotorRev = 0;
+    private double armCountsPerInch = 0;
 
     private double countsPerMotorRev = 480;
     private double motorRPM = 300;
@@ -135,17 +157,22 @@ public class AutoFTCLib extends LinearOpMode {
         });
 
         gamePadDrive = new GamepadEx(gamepad1);
+        gamePadArm = new GamepadEx(gamepad2);
+
 
 //TODO:        Use this for GoBilda motors.
 //        countsPerMotorRev = backLeftDrive.ACHIEVABLE_MAX_TICKS_PER_SECOND;
 //        motorRPM = backLeftDrive.getMaxRPM();
         countsPerInch = (countsPerMotorRev * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
+        armCountsPerInch = ((armCountsPerMotorRev * ARM_DRIVE_REDUCTION) / (ARM_WHEEL_DIAMETER_INCHES * 3.145));
 
+        armFeedForward = new ElevatorFeedforward(10, 20, 30);
         simpleFeedForward = new SimpleMotorFeedforward(2, 10);
-        backLeftDrive = new MotorEx(hardwareMap, "leftbackdrive", countsPerMotorRev, motorRPM);
-        backRightDrive = new MotorEx(hardwareMap, "rightbackdrive", countsPerMotorRev, motorRPM);
-        frontLeftDrive = new MotorEx(hardwareMap, "leftfrontdrive", countsPerMotorRev, motorRPM);
-        frontRightDrive = new MotorEx(hardwareMap, "rightfrontdrive", countsPerMotorRev, motorRPM);
+        armMotor = new MotorEx(hardwareMap, "ArmMotor");
+        backLeftDrive = new MotorEx(hardwareMap, "Backleft", countsPerMotorRev, motorRPM);
+        backRightDrive = new MotorEx(hardwareMap, "Backright", countsPerMotorRev, motorRPM);
+        frontLeftDrive = new MotorEx(hardwareMap, "Frontleft", countsPerMotorRev, motorRPM);
+        frontRightDrive = new MotorEx(hardwareMap, "Frontright", countsPerMotorRev, motorRPM);
         backLeftDrive.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         backRightDrive.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         frontLeftDrive.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
@@ -169,7 +196,7 @@ public class AutoFTCLib extends LinearOpMode {
         leftMotors = new MotorGroup(backLeftDrive, frontLeftDrive);
         rightMotors = new MotorGroup(backRightDrive, frontRightDrive);
 
-        gripperServo = new SimpleServo(hardwareMap, "servo1", GRIPPER_MIN_ANGLE, GRIPPER_MAX_ANGLE);
+        gripperServo = new SimpleServo(hardwareMap, "GripperServo", GRIPPER_MIN_ANGLE, GRIPPER_MAX_ANGLE);
         gripperServo.setInverted(true);
         openGripper();
 
@@ -225,14 +252,16 @@ public class AutoFTCLib extends LinearOpMode {
                     }
 
                     sleep(750);
-                    pathSegment = 4;
+                    pathSegment = 3;
                     break;
                 case 3:
-                    turnToHeading(TURN_SPEED, -45, 3);
-                    sleep(750);
+                    moveArm(ArmPosition.high);
+//                    turnToHeading(TURN_SPEED, -45, 3);
+//                    sleep(750);
                     pathSegment = 4;
                     break;
                 case 4:
+                    moveArm(ArmPosition.home);
                     stopAllMotors();
 //                TODO: Wait here so drive can read telemetry. Remove this after testing.
 //                    while (!isStopRequested() && opModeIsActive()) {
@@ -580,6 +609,80 @@ public class AutoFTCLib extends LinearOpMode {
         headingOffset = getRawHeading();
         robotHeading = 0;
     }
+    public void ProcessArm() {
+        // Adjust position
+        if (gamePadArm.wasJustPressed(GamepadKeys.Button.DPAD_DOWN)) {
+            moveArm(ArmPosition.adjustDown);
+        }
+
+        if (gamePadArm.wasJustPressed(GamepadKeys.Button.DPAD_UP)) {
+            moveArm(ArmPosition.adjustUp);
+        }
+
+        // Low junction
+        if (gamePadArm.wasJustPressed(GamepadKeys.Button.A)) {
+            moveArm(ArmPosition.low);
+        }
+
+        // medium junction
+        if (gamePadArm.wasJustPressed(GamepadKeys.Button.B)) {
+            moveArm(ArmPosition.medium);
+        }
+
+        // high junction
+        if (gamePadArm.wasJustPressed(GamepadKeys.Button.Y)) {
+            moveArm(ArmPosition.high);
+        }
+
+        // ground junction
+        if (gamePadArm.wasJustPressed(GamepadKeys.Button.X)) {
+            moveArm(ArmPosition.home);
+        }
+    }
+
+    public void moveArm(ArmPosition position) {
+        armPosition = armMotor.getCurrentPosition();
+        switch (position) {
+            case home:
+                armTarget = HOME_POSITION * (int) armCountsPerInch;
+                break;
+            case low:
+                armTarget = (LOW_JUNCTION * (int) armCountsPerInch);
+                break;
+            case medium:
+                armTarget = (MEDIUM_JUNCTION * (int) armCountsPerInch);
+                break;
+            case high:
+                armTarget = (HIGH_JUNCTION * (int) armCountsPerInch);
+                break;
+            case adjustUp:
+                armTarget = armPosition + (ADJUST_ARM_INCREMENT * (int) armCountsPerInch);
+                break;
+            case adjustDown:
+                armTarget = armPosition - (ADJUST_ARM_INCREMENT * (int) armCountsPerInch);
+                break;
+            default:
+                armTarget = 0;
+        }
+
+        // Prevent arm moving below HOME_POSITION
+        armTarget = Math.max(armTarget, HOME_POSITION);
+        armMotor.setRunMode(Motor.RunMode.PositionControl);
+        armMotor.setTargetPosition(armTarget);
+
+        while (!armMotor.atTargetPosition() && !isStopRequested()) {
+//            armMotor.set(MAX_POWER);
+            armMotor.set(armFeedForward.calculate(MAX_POWER));
+            armPosition = armMotor.getCurrentPosition();
+            armDistance = armMotor.getDistance();
+            armVelocity = armMotor.getVelocity();
+            armMotor.encoder.getRawVelocity();
+            armAcceleration = armMotor.getAcceleration();
+        }
+
+        armMotor.stopMotor();
+    }
+
 
     public void openGripper() {
 
@@ -588,6 +691,16 @@ public class AutoFTCLib extends LinearOpMode {
 
     public void closeGripper() {
         gripperServo.turnToAngle(GRIPPER_CLOSED);
+    }
+
+
+    public enum ArmPosition {
+        home,
+        low,
+        medium,
+        high,
+        adjustUp,
+        adjustDown
     }
 
     public enum StartPosition {
