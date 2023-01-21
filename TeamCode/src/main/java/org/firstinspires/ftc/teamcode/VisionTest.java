@@ -29,7 +29,7 @@ public class VisionTest extends LinearOpMode {
             @Override
             public void onOpened()
             {
-                camera.startStreaming(320,240, OpenCvCameraRotation.SIDEWAYS_LEFT);
+                camera.startStreaming(320,240, OpenCvCameraRotation.UPRIGHT);
             }
 
             @Override

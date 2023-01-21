@@ -186,6 +186,7 @@ public class AutoFTCLib extends LinearOpMode {
         backRightDrive.setInverted(false);
         frontRightDrive.setInverted(false);
         armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         backLeftDrive.setPositionCoefficient(.05);
         frontLeftDrive.setPositionCoefficient(.05);
@@ -234,7 +235,7 @@ public class AutoFTCLib extends LinearOpMode {
         }
 
         waitForStart();
-        pathSegment = 3;
+        pathSegment = 1;
         while (opModeIsActive() && !isStopRequested()) {
             switch (pathSegment) {
                 case 1:
@@ -644,6 +645,7 @@ public class AutoFTCLib extends LinearOpMode {
     }
 
     public void moveArm(ArmPosition position) {
+
         armPosition = armMotor.getCurrentPosition();
         switch (position) {
             case home:
@@ -673,7 +675,7 @@ public class AutoFTCLib extends LinearOpMode {
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
 
-        while (!armMotor.isBusy() && !isStopRequested()) {
+        while (armMotor.isBusy() && !isStopRequested()) {
             armMotor.setPower(.8);
 //            armMotor.set(armFeedForward.calculate(MAX_POWER));
             armPosition = armMotor.getCurrentPosition();
