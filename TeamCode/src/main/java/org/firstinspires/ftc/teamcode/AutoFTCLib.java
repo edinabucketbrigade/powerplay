@@ -14,6 +14,9 @@ import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -50,16 +53,16 @@ public class AutoFTCLib extends LinearOpMode {
     // How close must the heading get to the target before moving to next step.
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
     static final double HEADING_THRESHOLD = 1.0;
-//    arm variables
-    static final double ARM_DRIVE_REDUCTION = .20;
-    static final double ARM_WHEEL_DIAMETER_INCHES = 2;
+    //    arm variables
+    static final double ARM_DRIVE_REDUCTION = .50;
+    static final double ARM_WHEEL_DIAMETER_INCHES = 2.5;
     static final int LOW_JUNCTION = 14;
     static final int MEDIUM_JUNCTION = 24;
     static final int HIGH_JUNCTION = 34;
     static final int HOME_POSITION = 1;
     static final int CONE_HEIGHT = 5;
     static final int ADJUST_ARM_INCREMENT = 1;
-//     These set the range for the gripper servo.
+    //     These set the range for the gripper servo.
     static final double GRIPPER_MIN_ANGLE = 0;
     static final double GRIPPER_MAX_ANGLE = 45;
     // These set the open and close positions
@@ -79,7 +82,7 @@ public class AutoFTCLib extends LinearOpMode {
     private MotorEx backRightDrive;
     private MotorEx frontLeftDrive;
     private MotorEx frontRightDrive;
-    private MotorEx armMotor = null;
+    private DcMotorEx armMotor = null;
     private ElevatorFeedforward armFeedForward;
     private MotorGroup leftMotors;
     private MotorGroup rightMotors;
@@ -93,7 +96,7 @@ public class AutoFTCLib extends LinearOpMode {
     private double armVelocity = 0;
     private double armDistance = 0;
     private double armAcceleration = 0;
-    private double armCountsPerMotorRev = 0;
+    private double armCountsPerMotorRev = 1440;
     private double armCountsPerInch = 0;
 
     private double countsPerMotorRev = 480;
@@ -168,7 +171,7 @@ public class AutoFTCLib extends LinearOpMode {
 
         armFeedForward = new ElevatorFeedforward(10, 20, 30);
         simpleFeedForward = new SimpleMotorFeedforward(2, 10);
-        armMotor = new MotorEx(hardwareMap, "ArmMotor");
+        armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
         backLeftDrive = new MotorEx(hardwareMap, "Backleft", countsPerMotorRev, motorRPM);
         backRightDrive = new MotorEx(hardwareMap, "Backright", countsPerMotorRev, motorRPM);
         frontLeftDrive = new MotorEx(hardwareMap, "Frontleft", countsPerMotorRev, motorRPM);
@@ -182,6 +185,7 @@ public class AutoFTCLib extends LinearOpMode {
         frontLeftDrive.setInverted(true);
         backRightDrive.setInverted(false);
         frontRightDrive.setInverted(false);
+        armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         backLeftDrive.setPositionCoefficient(.05);
         frontLeftDrive.setPositionCoefficient(.05);
@@ -230,7 +234,7 @@ public class AutoFTCLib extends LinearOpMode {
         }
 
         waitForStart();
-        pathSegment = 1;
+        pathSegment = 3;
         while (opModeIsActive() && !isStopRequested()) {
             switch (pathSegment) {
                 case 1:
@@ -251,23 +255,21 @@ public class AutoFTCLib extends LinearOpMode {
                             break;
                     }
 
-                    sleep(750);
+
+//                    sleep(750);
                     pathSegment = 3;
                     break;
                 case 3:
                     moveArm(ArmPosition.high);
-//                    turnToHeading(TURN_SPEED, -45, 3);
-//                    sleep(750);
+                    sleep(5000);
                     pathSegment = 4;
                     break;
                 case 4:
-                    moveArm(ArmPosition.home);
-                    stopAllMotors();
 //                TODO: Wait here so drive can read telemetry. Remove this after testing.
 //                    while (!isStopRequested() && opModeIsActive()) {
 //                        sendTelemetry();
 //                    }
-
+                    moveArm(ArmPosition.home);
                     telemetry.addData("Status", "Path complete.");
                     telemetry.update();
                     break;
@@ -351,8 +353,8 @@ public class AutoFTCLib extends LinearOpMode {
             moveRobot(maxDriveSpeed, turnSpeed);
         }
 
-        // Stop all motion
-        stopAllMotors();
+//         Stop all motion
+//        stopAllMotors();
     }
 
     /**
@@ -391,7 +393,7 @@ public class AutoFTCLib extends LinearOpMode {
         }
 
         // Stop all motion;
-        stopAllMotors();
+//        stopAllMotors();
 //        moveRobot(0, 0);
     }
 
@@ -477,10 +479,10 @@ public class AutoFTCLib extends LinearOpMode {
             rightSpeed /= max;
         }
 
-//        leftMotors.set(leftSpeed);
-//        rightMotors.set(rightSpeed);
-        leftMotors.set(simpleFeedForward.calculate(leftSpeed));
-        rightMotors.set(simpleFeedForward.calculate(rightSpeed));
+        leftMotors.set(leftSpeed);
+        rightMotors.set(rightSpeed);
+//        leftMotors.set(simpleFeedForward.calculate(leftSpeed));
+//        rightMotors.set(simpleFeedForward.calculate(rightSpeed));
 
         sendTelemetry();
     }
@@ -609,6 +611,7 @@ public class AutoFTCLib extends LinearOpMode {
         headingOffset = getRawHeading();
         robotHeading = 0;
     }
+
     public void ProcessArm() {
         // Adjust position
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.DPAD_DOWN)) {
@@ -666,21 +669,21 @@ public class AutoFTCLib extends LinearOpMode {
         }
 
         // Prevent arm moving below HOME_POSITION
-        armTarget = Math.max(armTarget, HOME_POSITION);
-        armMotor.setRunMode(Motor.RunMode.PositionControl);
+        armTarget = Math.max(armTarget, HOME_POSITION * (int) armCountsPerInch);
         armMotor.setTargetPosition(armTarget);
+        armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
 
-        while (!armMotor.atTargetPosition() && !isStopRequested()) {
-//            armMotor.set(MAX_POWER);
-            armMotor.set(armFeedForward.calculate(MAX_POWER));
+        while (!armMotor.isBusy() && !isStopRequested()) {
+            armMotor.setPower(.8);
+//            armMotor.set(armFeedForward.calculate(MAX_POWER));
             armPosition = armMotor.getCurrentPosition();
-            armDistance = armMotor.getDistance();
+//            armDistance = armMotor.getDistance();
             armVelocity = armMotor.getVelocity();
-            armMotor.encoder.getRawVelocity();
-            armAcceleration = armMotor.getAcceleration();
+//            armMotor.encoder.getRawVelocity();
+//            armAcceleration = armMotor.getAcceleration();
         }
 
-        armMotor.stopMotor();
+//        armMotor.stopMotor();
     }
 
 
