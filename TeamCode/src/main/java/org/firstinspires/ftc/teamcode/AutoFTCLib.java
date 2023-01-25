@@ -274,6 +274,8 @@ public class AutoFTCLib extends LinearOpMode {
                             break;
                     }
                     telemetry.addData("Status", "Path complete.");
+                    telemetry.update();
+                    break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + pathSegment);
             }
