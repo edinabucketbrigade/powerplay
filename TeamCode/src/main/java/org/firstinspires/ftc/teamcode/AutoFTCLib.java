@@ -42,7 +42,8 @@ public class AutoFTCLib extends LinearOpMode {
     // For gearing UP, use a gear ratio less than 1.0. Note this will affect the direction of wheel rotation.
     static final double DRIVE_GEAR_REDUCTION = 1.0;     // No External Gearing.
     static final double WHEEL_DIAMETER_INCHES = 3.778;     // For figuring circumference
-    static final double DRIVE_SPEED = 0.4;     // Max driving speed for better distance accuracy.
+    static final double DRIVE_SPEED = 0.4;         // Max driving speed for better distance accuracy.
+    static final double MAX_VELOCITY = 2200;
     static final double TURN_SPEED = 0.4;
     // Define the Proportional control coefficient (or GAIN) for "heading control".
     // We define one value when Turning (larger errors), and the other is used when Driving straight (smaller errors).
@@ -84,6 +85,7 @@ public class AutoFTCLib extends LinearOpMode {
     private MotorEx frontRightDrive;
     private DcMotorEx armMotor = null;
     private ElevatorFeedforward armFeedForward;
+    private double feedForwardCalculate;
     private MotorGroup leftMotors;
     private MotorGroup rightMotors;
     private MecanumDrive driveRobot;
@@ -674,15 +676,16 @@ public class AutoFTCLib extends LinearOpMode {
         armTarget = Math.max(armTarget, HOME_POSITION * (int) armCountsPerInch);
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        armMotor.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
+        armMotor.setPositionPIDFCoefficients(8);
+        armMotor.setVelocity(MAX_VELOCITY);
 
         while (armMotor.isBusy() && !isStopRequested()) {
-            armMotor.setPower(.8);
-//            armMotor.set(armFeedForward.calculate(MAX_POWER));
-            armPosition = armMotor.getCurrentPosition();
-//            armDistance = armMotor.getDistance();
             armVelocity = armMotor.getVelocity();
-//            armMotor.encoder.getRawVelocity();
-//            armAcceleration = armMotor.getAcceleration();
+            feedForwardCalculate = armFeedForward.calculate(armVelocity);
+            armMotor.setPower(feedForwardCalculate);
+            armPosition = armMotor.getCurrentPosition();
+            sendTelemetry();
         }
 
 //        armMotor.stopMotor();
