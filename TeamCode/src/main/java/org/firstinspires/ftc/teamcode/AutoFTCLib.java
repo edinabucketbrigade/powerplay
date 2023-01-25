@@ -7,9 +7,6 @@ import com.arcrobotics.ftclib.drivebase.MecanumDrive;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.arcrobotics.ftclib.hardware.SimpleServo;
-import com.arcrobotics.ftclib.hardware.motors.Motor;
-import com.arcrobotics.ftclib.hardware.motors.MotorEx;
-import com.arcrobotics.ftclib.hardware.motors.MotorGroup;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -69,6 +66,7 @@ public class AutoFTCLib extends LinearOpMode {
     // These set the open and close positions
     static final double GRIPPER_OPEN = 12;
     static final double GRIPPER_CLOSED = 23;
+    static final double MAX_POWER = 0.4;
     private int pathSegment;
     private StartPosition startPosition = StartPosition.NONE;
     private int STRAFE_TIMEOUT = 3;     //Time to wait for strafing to finish.
@@ -89,8 +87,6 @@ public class AutoFTCLib extends LinearOpMode {
     private MecanumDrive driveRobot;
     private SimpleMotorFeedforward simpleFeedForward;
     private SimpleServo gripperServo;
-
-    static final double MAX_POWER = 0.4;
     private int armTarget = 0;
     private int armPosition = 0;
     private double armVelocity = 0;
@@ -142,6 +138,7 @@ public class AutoFTCLib extends LinearOpMode {
         // Note: if you choose two conflicting directions, this initialization will cause a code exception.
         imu.initialize(new IMU.Parameters(orientationOnRobot));
         imu.resetYaw();
+        resetHeading();
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         camera = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, WEB_CAM_NAME), cameraMonitorViewId);
@@ -172,6 +169,7 @@ public class AutoFTCLib extends LinearOpMode {
         armFeedForward = new ElevatorFeedforward(10, 20, 25);
         simpleFeedForward = new SimpleMotorFeedforward(2, 10);
         armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
+
         backLeftDrive = hardwareMap.get(DcMotorEx.class, "Backleft");
         backRightDrive = hardwareMap.get(DcMotorEx.class, "Backright");
         frontLeftDrive = hardwareMap.get(DcMotorEx.class, "Frontleft");
@@ -185,6 +183,9 @@ public class AutoFTCLib extends LinearOpMode {
         frontLeftDrive.setDirection(DcMotorSimple.Direction.REVERSE);
         backRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         frontRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
+
+        setMotorsPPositionCoefficents(10);
+
         armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
@@ -243,14 +244,14 @@ public class AutoFTCLib extends LinearOpMode {
                     pathSegment = 3;
                     break;
                 case 3:
-                    moveArm(ArmPosition.high);
+                    moveArm(ArmPosition.HIGH);
                     sleep(375);
                     openGripper();
                     sleep(375);
                     pathSegment = 4;
                     break;
                 case 4:
-                    moveArm(ArmPosition.home);
+                    moveArm(ArmPosition.HOME);
                     if (startPosition == StartPosition.RIGHT) {
                         turnToHeading(DRIVE_SPEED, 90, 3);
                     }
@@ -332,11 +333,7 @@ public class AutoFTCLib extends LinearOpMode {
         frontLeftDrive.setTargetPosition(frontLeftTarget);
         frontRightDrive.setTargetPosition(frontRightTarget);
 
-        backLeftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        backRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        frontLeftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        frontRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
+        setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
 
         // Set the required driving speed  (must be positive for RUN_TO_POSITION)
         // Start driving straight, and then enter the control loop
@@ -383,6 +380,8 @@ public class AutoFTCLib extends LinearOpMode {
         ElapsedTime turnTimer = new ElapsedTime();
         turnTimer.reset();
 
+        setMotorsMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
         // Run getSteeringCorrection() once to pre-calculate the current error
         getSteeringCorrection(heading, P_DRIVE_GAIN);
 
@@ -404,7 +403,6 @@ public class AutoFTCLib extends LinearOpMode {
 
         // Stop all motion;
 //        stopAllMotors();
-//        moveRobot(0, 0);
     }
 
     /**
@@ -423,6 +421,8 @@ public class AutoFTCLib extends LinearOpMode {
         ElapsedTime holdTimer = new ElapsedTime();
         holdTimer.reset();
 
+        setMotorsMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
         // keep looping while we have time remaining.
         while (opModeIsActive() &&
                 !isStopRequested() &&
@@ -438,7 +438,7 @@ public class AutoFTCLib extends LinearOpMode {
         }
 
         // Stop all motion;
-        stopAllMotors();
+//        stopAllMotors();
 //        moveRobot(0, 0);
     }
 
@@ -538,10 +538,7 @@ public class AutoFTCLib extends LinearOpMode {
         frontLeftDrive.setTargetPosition(frontLeftTarget);
         frontRightDrive.setTargetPosition(frontRightTarget);
 
-        backLeftDrive.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-        backRightDrive.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-        frontLeftDrive.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-        frontRightDrive.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
 
         while (opModeIsActive() &&
                 !isStopRequested() &&
@@ -557,7 +554,7 @@ public class AutoFTCLib extends LinearOpMode {
             sendTelemetry();
         }
 
-        stopAllMotors();
+//        stopAllMotors();
     }
 
     /**
@@ -591,6 +588,20 @@ public class AutoFTCLib extends LinearOpMode {
         frontRightPosition = frontRightDrive.getCurrentPosition();
     }
 
+    public void setMotorsMode(DcMotor.RunMode mode) {
+        backLeftDrive.setMode(mode);
+        backRightDrive.setMode(mode);
+        frontLeftDrive.setMode(mode);
+        frontRightDrive.setMode(mode);
+    }
+
+    public void setMotorsPPositionCoefficents(double PositionCoefficent) {
+        backLeftDrive.setPositionPIDFCoefficients(PositionCoefficent);
+        backRightDrive.setPositionPIDFCoefficients(PositionCoefficent);
+        frontLeftDrive.setPositionPIDFCoefficients(PositionCoefficent);
+        frontRightDrive.setPositionPIDFCoefficients(PositionCoefficent);
+    }
+
     public void stopAllMotors() {
         backLeftDrive.setPower(0);
         backRightDrive.setPower(0);
@@ -618,31 +629,31 @@ public class AutoFTCLib extends LinearOpMode {
     public void ProcessArm() {
         // Adjust position
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.DPAD_DOWN)) {
-            moveArm(ArmPosition.adjustDown);
+            moveArm(ArmPosition.ADJUST_DOWN);
         }
 
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.DPAD_UP)) {
-            moveArm(ArmPosition.adjustUp);
+            moveArm(ArmPosition.ADJUST_UP);
         }
 
         // Low junction
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.A)) {
-            moveArm(ArmPosition.low);
+            moveArm(ArmPosition.LOW);
         }
 
         // medium junction
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.B)) {
-            moveArm(ArmPosition.medium);
+            moveArm(ArmPosition.MEDIUM);
         }
 
         // high junction
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.Y)) {
-            moveArm(ArmPosition.high);
+            moveArm(ArmPosition.HIGH);
         }
 
         // ground junction
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.X)) {
-            moveArm(ArmPosition.home);
+            moveArm(ArmPosition.HOME);
         }
     }
 
@@ -650,22 +661,22 @@ public class AutoFTCLib extends LinearOpMode {
 
         armPosition = armMotor.getCurrentPosition();
         switch (position) {
-            case home:
+            case HOME:
                 armTarget = HOME_POSITION * (int) armCountsPerInch;
                 break;
-            case low:
+            case LOW:
                 armTarget = (LOW_JUNCTION * (int) armCountsPerInch);
                 break;
-            case medium:
+            case MEDIUM:
                 armTarget = (MEDIUM_JUNCTION * (int) armCountsPerInch);
                 break;
-            case high:
+            case HIGH:
                 armTarget = (HIGH_JUNCTION * (int) armCountsPerInch);
                 break;
-            case adjustUp:
+            case ADJUST_UP:
                 armTarget = armPosition + (ADJUST_ARM_INCREMENT * (int) armCountsPerInch);
                 break;
-            case adjustDown:
+            case ADJUST_DOWN:
                 armTarget = armPosition - (ADJUST_ARM_INCREMENT * (int) armCountsPerInch);
                 break;
             default:
@@ -703,12 +714,12 @@ public class AutoFTCLib extends LinearOpMode {
 
 
     public enum ArmPosition {
-        home,
-        low,
-        medium,
-        high,
-        adjustUp,
-        adjustDown
+        HOME,
+        LOW,
+        MEDIUM,
+        HIGH,
+        ADJUST_UP,
+        ADJUST_DOWN
     }
 
     public enum StartPosition {
