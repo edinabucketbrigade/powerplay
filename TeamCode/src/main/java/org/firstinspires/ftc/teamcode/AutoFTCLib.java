@@ -79,15 +79,13 @@ public class AutoFTCLib extends LinearOpMode {
     private GamepadEx gamePadDrive;
     private String WEB_CAM_NAME = "webcam1";
     private SleeveDetection.ParkingPosition parkLocation;
-    private MotorEx backLeftDrive;
-    private MotorEx backRightDrive;
-    private MotorEx frontLeftDrive;
-    private MotorEx frontRightDrive;
+    private DcMotorEx backLeftDrive;
+    private DcMotorEx backRightDrive;
+    private DcMotorEx frontLeftDrive;
+    private DcMotorEx frontRightDrive;
     private DcMotorEx armMotor = null;
     private ElevatorFeedforward armFeedForward;
     private double feedForwardCalculate;
-    private MotorGroup leftMotors;
-    private MotorGroup rightMotors;
     private MecanumDrive driveRobot;
     private SimpleMotorFeedforward simpleFeedForward;
     private SimpleServo gripperServo;
@@ -171,37 +169,24 @@ public class AutoFTCLib extends LinearOpMode {
         countsPerInch = (countsPerMotorRev * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
         armCountsPerInch = ((armCountsPerMotorRev * ARM_DRIVE_REDUCTION) / (ARM_WHEEL_DIAMETER_INCHES * 3.145));
 
-        armFeedForward = new ElevatorFeedforward(10, 20, 30);
+        armFeedForward = new ElevatorFeedforward(10, 20, 25);
         simpleFeedForward = new SimpleMotorFeedforward(2, 10);
         armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
-        backLeftDrive = new MotorEx(hardwareMap, "Backleft", countsPerMotorRev, motorRPM);
-        backRightDrive = new MotorEx(hardwareMap, "Backright", countsPerMotorRev, motorRPM);
-        frontLeftDrive = new MotorEx(hardwareMap, "Frontleft", countsPerMotorRev, motorRPM);
-        frontRightDrive = new MotorEx(hardwareMap, "Frontright", countsPerMotorRev, motorRPM);
-        backLeftDrive.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
-        backRightDrive.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
-        frontLeftDrive.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
-        frontRightDrive.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
+        backLeftDrive = hardwareMap.get(DcMotorEx.class, "Backleft");
+        backRightDrive = hardwareMap.get(DcMotorEx.class, "Backright");
+        frontLeftDrive = hardwareMap.get(DcMotorEx.class, "Frontleft");
+        frontRightDrive = hardwareMap.get(DcMotorEx.class, "Frontright");
+        backLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        backLeftDrive.setInverted(true);
-        frontLeftDrive.setInverted(true);
-        backRightDrive.setInverted(false);
-        frontRightDrive.setInverted(false);
+        backLeftDrive.setDirection(DcMotorSimple.Direction.REVERSE);
+        frontLeftDrive.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
+        frontRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        backLeftDrive.setPositionCoefficient(.05);
-        frontLeftDrive.setPositionCoefficient(.05);
-        backRightDrive.setPositionCoefficient(.05);
-        frontRightDrive.setPositionCoefficient(.05);
-
-        backLeftDrive.setPositionTolerance(10);
-        frontLeftDrive.setPositionTolerance(10);
-        backRightDrive.setPositionTolerance(10);
-        frontRightDrive.setPositionTolerance(10);
-
-        leftMotors = new MotorGroup(backLeftDrive, frontLeftDrive);
-        rightMotors = new MotorGroup(backRightDrive, frontRightDrive);
 
         gripperServo = new SimpleServo(hardwareMap, "GripperServo", GRIPPER_MIN_ANGLE, GRIPPER_MAX_ANGLE);
         gripperServo.setInverted(true);
@@ -258,20 +243,17 @@ public class AutoFTCLib extends LinearOpMode {
                             break;
                     }
 
-
-//                    sleep(750);
+                    sleep(750);
+                    turnToHeading(DRIVE_SPEED, -90, 3);
+                    sleep(750);
                     pathSegment = 3;
                     break;
                 case 3:
                     moveArm(ArmPosition.high);
-                    sleep(5000);
+                    sleep(500);
                     pathSegment = 4;
                     break;
                 case 4:
-//                TODO: Wait here so drive can read telemetry. Remove this after testing.
-//                    while (!isStopRequested() && opModeIsActive()) {
-//                        sendTelemetry();
-//                    }
                     moveArm(ArmPosition.home);
                     telemetry.addData("Status", "Path complete.");
                     telemetry.update();
@@ -320,18 +302,23 @@ public class AutoFTCLib extends LinearOpMode {
 
         // Determine new target position, and pass to motor controller
         int moveCounts = (int) (distance * countsPerInch);
-        getCurrentPositionsFromMotorGroups();
+        getCurrentPositionsFromMotors();
         backLeftTarget = backLeftPosition + moveCounts;
         backRightTarget = backRightPosition + moveCounts;
         frontLeftTarget = backLeftTarget + moveCounts;
         frontRightTarget = backRightTarget + moveCounts;
 
         // Set Target FIRST, then turn on RUN_TO_POSITION
-        leftMotors.setTargetPosition(backLeftTarget);
-        rightMotors.setTargetPosition(backRightTarget);
+        backLeftDrive.setTargetPosition(backLeftTarget);
+        backRightDrive.setTargetPosition(backRightTarget);
+        frontLeftDrive.setTargetPosition(frontLeftTarget);
+        frontRightDrive.setTargetPosition(frontRightTarget);
 
-        leftMotors.setRunMode(Motor.RunMode.PositionControl);
-        rightMotors.setRunMode(Motor.RunMode.PositionControl);
+        backLeftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontLeftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
 
         // Set the required driving speed  (must be positive for RUN_TO_POSITION)
         // Start driving straight, and then enter the control loop
@@ -341,8 +328,10 @@ public class AutoFTCLib extends LinearOpMode {
         // keep looping while we are still active, and all motors are running.
         while (opModeIsActive() &&
                 !isStopRequested() &&
-                !(leftMotors.atTargetPosition() &&
-                        rightMotors.atTargetPosition()) &&
+                (backLeftDrive.isBusy() &&
+                        backRightDrive.isBusy() &&
+                        frontLeftDrive.isBusy() &&
+                        frontRightDrive.isBusy()) &&
                 (driveTimer.time() < driveTime)) {
 
             // Determine required steering to keep on heading
@@ -472,8 +461,8 @@ public class AutoFTCLib extends LinearOpMode {
         driveSpeed = drive;     // save this value as a class member so it can be used by telemetry.
         turnSpeed = turn;      // save this value as a class member so it can be used by telemetry.
 
-        leftSpeed = drive - turn;
-        rightSpeed = drive + turn;
+        leftSpeed = drive + turn;
+        rightSpeed = drive - turn;
 
         // Scale speeds down if either one exceeds +/- 1.0;
         double max = Math.max(Math.abs(leftSpeed), Math.abs(rightSpeed));
@@ -482,8 +471,11 @@ public class AutoFTCLib extends LinearOpMode {
             rightSpeed /= max;
         }
 
-        leftMotors.set(leftSpeed);
-        rightMotors.set(rightSpeed);
+        backLeftDrive.setPower(leftSpeed);
+        backRightDrive.setPower(rightSpeed);
+        frontLeftDrive.setPower(leftSpeed);
+        frontRightDrive.setPower(rightSpeed);
+
 //        leftMotors.set(simpleFeedForward.calculate(leftSpeed));
 //        rightMotors.set(simpleFeedForward.calculate(rightSpeed));
 
@@ -501,10 +493,10 @@ public class AutoFTCLib extends LinearOpMode {
     public void strafeRobot(double strafeSpeed, double distance, double heading, int strafeTime) {
         ElapsedTime strafeTimer = new ElapsedTime();
         strafeTimer.reset();
-        backLeftDrive.resetEncoder();
-        backRightDrive.resetEncoder();
-        frontLeftDrive.resetEncoder();
-        frontRightDrive.resetEncoder();
+        backLeftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backRightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        frontLeftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        frontRightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         targetHeading = heading;
         int moveCounts = (int) (distance * countsPerInch);
@@ -526,24 +518,24 @@ public class AutoFTCLib extends LinearOpMode {
         backLeftDrive.setTargetPosition(backLeftTarget);
         backRightDrive.setTargetPosition(backRightTarget);
         frontLeftDrive.setTargetPosition(frontLeftTarget);
-        frontRightDrive.setTargetDistance(frontRightTarget);
+        frontRightDrive.setTargetPosition(frontRightTarget);
 
-        backLeftDrive.setRunMode(MotorEx.RunMode.PositionControl);
-        backRightDrive.setRunMode(MotorEx.RunMode.PositionControl);
-        frontLeftDrive.setRunMode(Motor.RunMode.PositionControl);
-        frontRightDrive.setRunMode(Motor.RunMode.PositionControl);
+        backLeftDrive.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        backRightDrive.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        frontLeftDrive.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+        frontRightDrive.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
 
         while (opModeIsActive() &&
                 !isStopRequested() &&
-                !(backLeftDrive.atTargetPosition() &&
-                        backRightDrive.atTargetPosition() &&
-                        frontLeftDrive.atTargetPosition() &&
-                        frontRightDrive.atTargetPosition()) &&
+                (backLeftDrive.isBusy() &&
+                        backRightDrive.isBusy() &&
+                        frontLeftDrive.isBusy() &&
+                        frontRightDrive.isBusy()) &&
                 (strafeTimer.seconds() < strafeTime)) {
-            backLeftDrive.set(strafeSpeed);
-            backRightDrive.set(strafeSpeed);
-            frontLeftDrive.set(strafeSpeed);
-            frontRightDrive.set(strafeSpeed);
+            backLeftDrive.setPower(strafeSpeed);
+            backRightDrive.setPower(strafeSpeed);
+            frontLeftDrive.setPower(strafeSpeed);
+            frontRightDrive.setPower(strafeSpeed);
             sendTelemetry();
         }
 
@@ -573,16 +565,6 @@ public class AutoFTCLib extends LinearOpMode {
         telemetry.update();
     }
 
-    // This get positions from motor groups.
-    public void getCurrentPositionsFromMotorGroups() {
-        List<Double> leftPositions = leftMotors.getPositions();
-        List<Double> rightPositions = rightMotors.getPositions();
-        backLeftPosition = leftPositions.get(0).intValue();
-        frontLeftPosition = leftPositions.get(1).intValue();
-        backRightPosition = rightPositions.get(0).intValue();
-        frontRightPosition = rightPositions.get(1).intValue();
-    }
-
     // Get postions from individual motors.
     public void getCurrentPositionsFromMotors() {
         backLeftPosition = backLeftDrive.getCurrentPosition();
@@ -592,10 +574,10 @@ public class AutoFTCLib extends LinearOpMode {
     }
 
     public void stopAllMotors() {
-        backLeftDrive.stopMotor();
-        backRightDrive.stopMotor();
-        frontLeftDrive.stopMotor();
-        frontRightDrive.stopMotor();
+        backLeftDrive.setPower(0);
+        backRightDrive.setPower(0);
+        frontLeftDrive.setPower(0);
+        frontRightDrive.setPower(0);
     }
 
     /**
