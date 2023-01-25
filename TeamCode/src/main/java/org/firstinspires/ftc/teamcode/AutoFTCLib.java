@@ -226,11 +226,42 @@ public class AutoFTCLib extends LinearOpMode {
         while (opModeIsActive() && !isStopRequested()) {
             switch (pathSegment) {
                 case 1:
-                    driveStraight(DRIVE_SPEED, 26, 0, 3);
+                    closeGripper();
+                    driveStraight(DRIVE_SPEED, 108, 0, 3);
                     sleep(750);
                     pathSegment = 2;
                     break;
                 case 2:
+                    if (startPosition == StartPosition.RIGHT) {
+                        turnToHeading(DRIVE_SPEED, -90, 3);
+                    }
+                    if (startPosition == StartPosition.LEFT) {
+                        turnToHeading(DRIVE_SPEED, 90, 3);
+                    }
+                    sleep(750);
+
+                    pathSegment = 3;
+                    break;
+                case 3:
+                    moveArm(ArmPosition.high);
+                    sleep(375);
+                    openGripper();
+                    sleep(375);
+                    pathSegment = 4;
+                    break;
+                case 4:
+                    moveArm(ArmPosition.home);
+                    if (startPosition == StartPosition.RIGHT) {
+                        turnToHeading(DRIVE_SPEED, 90, 3);
+                    }
+                    if (startPosition == StartPosition.LEFT) {
+                        turnToHeading(DRIVE_SPEED, -90, 3);
+                    }
+                    sleep(750);
+                    driveStraight(DRIVE_SPEED, -60, 0, 3);
+                    pathSegment = 5;
+                    break;
+                case 5:
                     // Where did the camera tell us to park?
                     switch (parkLocation) {
                         case LEFT:
@@ -242,22 +273,7 @@ public class AutoFTCLib extends LinearOpMode {
                             strafeRobot(DRIVE_SPEED, 24, 90, STRAFE_TIMEOUT);
                             break;
                     }
-
-                    sleep(750);
-                    turnToHeading(DRIVE_SPEED, -90, 3);
-                    sleep(750);
-                    pathSegment = 3;
-                    break;
-                case 3:
-                    moveArm(ArmPosition.high);
-                    sleep(500);
-                    pathSegment = 4;
-                    break;
-                case 4:
-                    moveArm(ArmPosition.home);
                     telemetry.addData("Status", "Path complete.");
-                    telemetry.update();
-                    break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + pathSegment);
             }
