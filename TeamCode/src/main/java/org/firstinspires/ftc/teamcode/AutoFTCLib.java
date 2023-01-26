@@ -26,6 +26,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
+import org.openftc.easyopencv.OpenCvWebcam;
 
 import java.util.List;
 
@@ -71,7 +72,7 @@ public class AutoFTCLib extends LinearOpMode {
     private StartPosition startPosition = StartPosition.NONE;
     private int STRAFE_TIMEOUT = 3;     //Time to wait for strafing to finish.
     private SleeveDetection sleeveDetection;
-    private OpenCvCamera camera;
+    private OpenCvWebcam camera;
     private IMU imu;
     private GamepadEx gamePadArm;
     private GamepadEx gamePadDrive;
@@ -223,6 +224,9 @@ public class AutoFTCLib extends LinearOpMode {
         }
 
         waitForStart();
+        // Save processing time, we are finished with the camera.
+        camera.stopStreaming();
+
         pathSegment = 1;
         while (opModeIsActive() && !isStopRequested()) {
             switch (pathSegment) {
