@@ -698,7 +698,7 @@ public class AutoFTCLib extends LinearOpMode {
         armTarget = Math.max(armTarget, HOME_POSITION * (int) armCountsPerInch);
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-//        armMotor.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
+        armMotor.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
         armMotor.setPositionPIDFCoefficients(8);
         armMotor.setVelocity(MAX_VELOCITY);
 
