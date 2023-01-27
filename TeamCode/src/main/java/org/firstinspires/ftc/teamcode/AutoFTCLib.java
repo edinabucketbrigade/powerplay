@@ -185,7 +185,7 @@ public class AutoFTCLib extends LinearOpMode {
         backRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         frontRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        setMotorsPPositionCoefficents(10);
+        setMotorsPositionCoefficents(10);
 
         armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -599,7 +599,7 @@ public class AutoFTCLib extends LinearOpMode {
         frontRightDrive.setMode(mode);
     }
 
-    public void setMotorsPPositionCoefficents(double PositionCoefficent) {
+    public void setMotorsPositionCoefficents(double PositionCoefficent) {
         backLeftDrive.setPositionPIDFCoefficients(PositionCoefficent);
         backRightDrive.setPositionPIDFCoefficients(PositionCoefficent);
         frontLeftDrive.setPositionPIDFCoefficients(PositionCoefficent);
