@@ -32,6 +32,7 @@ import java.util.List;
 
 @Autonomous(name = "State Auto", group = "FtcLib")
 public class AutoFTCLib extends LinearOpMode {
+//    , preselectTeleOp = "PowerPlayDC"
     // Calculate the COUNTS_PER_INCH for your specific drive train.
     // Go to your motor vendor website to determine your motor's COUNTS_PER_MOTOR_REV
     // For external drive gearing, set DRIVE_GEAR_REDUCTION as needed.
@@ -42,16 +43,16 @@ public class AutoFTCLib extends LinearOpMode {
     static final double WHEEL_DIAMETER_INCHES = 3.778;     // For figuring circumference
     static final double DRIVE_SPEED = 0.4;         // Max driving speed for better distance accuracy.
     static final double MAX_VELOCITY = 2200;
-    static final double TURN_SPEED = 0.4;
+    static final double TURN_SPEED = 1;
     // Define the Proportional control coefficient (or GAIN) for "heading control".
     // We define one value when Turning (larger errors), and the other is used when Driving straight (smaller errors).
     // Increase these numbers if the heading does not corrects strongly enough (eg: a heavy robot or using tracks)
     // Decrease these numbers if the heading does not settle on the correct value (eg: very agile robot with omni wheels)
-    static final double P_TURN_GAIN = 0.01;     // Larger is more responsive, but also less stable
+    static final double P_TURN_GAIN = 0.0009;     // Larger is more responsive, but also less stable
     static final double P_DRIVE_GAIN = 0.03;     // Larger is more responsive, but also less stable
     // How close must the heading get to the target before moving to next step.
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
-    static final double HEADING_THRESHOLD = 1.0;
+    static final double HEADING_THRESHOLD = 0.0;
     //    arm variables
     static final double ARM_DRIVE_REDUCTION = .50;
     static final double ARM_WHEEL_DIAMETER_INCHES = 2.5;
@@ -76,7 +77,7 @@ public class AutoFTCLib extends LinearOpMode {
     private IMU imu;
     private GamepadEx gamePadArm;
     private GamepadEx gamePadDrive;
-    private String WEB_CAM_NAME = "webcam1";
+    private String WEB_CAM_NAME = "Webcam 1";
     private SleeveDetection.ParkingPosition parkLocation;
     private DcMotorEx backLeftDrive;
     private DcMotorEx backRightDrive;
@@ -149,7 +150,7 @@ public class AutoFTCLib extends LinearOpMode {
         camera.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
             @Override
             public void onOpened() {
-                camera.startStreaming(320, 240, OpenCvCameraRotation.SIDEWAYS_LEFT);
+                camera.startStreaming(320, 240, OpenCvCameraRotation.SIDEWAYS_RIGHT);
             }
 
             @Override
@@ -238,10 +239,10 @@ public class AutoFTCLib extends LinearOpMode {
                     break;
                 case 2:
                     if (startPosition == StartPosition.RIGHT) {
-                        turnToHeading(DRIVE_SPEED, -90, 3);
+                        turnToHeading(TURN_SPEED, -90, 3);
                     }
                     if (startPosition == StartPosition.LEFT) {
-                        turnToHeading(DRIVE_SPEED, 90, 3);
+                        turnToHeading(TURN_SPEED, 90, 3);
                     }
                     sleep(750);
 
@@ -249,18 +250,17 @@ public class AutoFTCLib extends LinearOpMode {
                     break;
                 case 3:
                     moveArm(ArmPosition.HIGH);
-                    sleep(375);
                     openGripper();
-                    sleep(375);
                     pathSegment = 4;
                     break;
                 case 4:
                     moveArm(ArmPosition.HOME);
+                    sleep(500);
                     if (startPosition == StartPosition.RIGHT) {
-                        turnToHeading(DRIVE_SPEED, 90, 3);
+                        turnToHeading(TURN_SPEED, 90, 3);
                     }
                     if (startPosition == StartPosition.LEFT) {
-                        turnToHeading(DRIVE_SPEED, -90, 3);
+                        turnToHeading(TURN_SPEED, -90, 3);
                     }
                     sleep(750);
                     driveStraight(DRIVE_SPEED, -60, 0, 3);
@@ -278,6 +278,9 @@ public class AutoFTCLib extends LinearOpMode {
                             strafeRobot(DRIVE_SPEED, 24, 90, STRAFE_TIMEOUT);
                             break;
                     }
+                    pathSegment = 6;
+                    break;
+                case 6:
                     telemetry.addData("Status", "Path complete.");
                     telemetry.update();
                     break;
@@ -406,7 +409,7 @@ public class AutoFTCLib extends LinearOpMode {
         }
 
         // Stop all motion;
-//        stopAllMotors();
+        stopAllMotors();
     }
 
     /**
@@ -581,6 +584,10 @@ public class AutoFTCLib extends LinearOpMode {
         telemetry.addData("Angle Target:Current", "%5.2f:%5.0f", targetHeading, robotHeading);
         telemetry.addData("Error:Steer", "%5.1f:%5.1f", headingError, turnSpeed);
         telemetry.addData("Wheel Speeds L:R.", "%5.2f : %5.2f", leftSpeed, rightSpeed);
+        telemetry.addData("Arm Target", armTarget);
+        telemetry.addData("Arm Position", armPosition);
+        telemetry.addData("Armm Velocity", armVelocity);
+        telemetry.addData("Feed Forward", feedForwardCalculate);
         telemetry.update();
     }
 
@@ -691,7 +698,7 @@ public class AutoFTCLib extends LinearOpMode {
         armTarget = Math.max(armTarget, HOME_POSITION * (int) armCountsPerInch);
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-        armMotor.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
+//        armMotor.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
         armMotor.setPositionPIDFCoefficients(8);
         armMotor.setVelocity(MAX_VELOCITY);
 
@@ -703,7 +710,7 @@ public class AutoFTCLib extends LinearOpMode {
             sendTelemetry();
         }
 
-//        armMotor.stopMotor();
+        armMotor.setPower(0);
     }
 
 
