@@ -32,7 +32,7 @@ import java.util.List;
 
 @Autonomous(name = "State Auto", group = "FtcLib")
 public class AutoFTCLib extends LinearOpMode {
-//    , preselectTeleOp = "PowerPlayDC"
+    //    , preselectTeleOp = "PowerPlayDC"
     // Calculate the COUNTS_PER_INCH for your specific drive train.
     // Go to your motor vendor website to determine your motor's COUNTS_PER_MOTOR_REV
     // For external drive gearing, set DRIVE_GEAR_REDUCTION as needed.
@@ -196,7 +196,9 @@ public class AutoFTCLib extends LinearOpMode {
         openGripper();
 
         // Choose your start position.
-        while (!isStarted() && !gamePadDrive.wasJustPressed(GamepadKeys.Button.START)) {
+        while (!isStarted() &&
+                !gamePadDrive.wasJustPressed(GamepadKeys.Button.START) &&
+                !isStopRequested()) {
             gamePadDrive.readButtons();
             if (gamePadDrive.wasJustPressed(GamepadKeys.Button.X)) {
                 startPosition = StartPosition.LEFT;
@@ -217,7 +219,7 @@ public class AutoFTCLib extends LinearOpMode {
         }
 
         // Adjust the camera here.
-        while (!isStarted()) {
+        while (!isStarted() && !isStopRequested()) {
             parkLocation = getParkLocation();
             telemetry.addData("Start Position: ", startPosition);
             telemetry.addData("Park Location: ", parkLocation);
