@@ -43,7 +43,6 @@ public class PowerPlayDC extends LinearOpMode {
     private double feedForwardCalculate = 0;
     private boolean isBusy = false;
 
-    private DcMotor ArmMotor;
     private DcMotor Frontleft;
     private DcMotor Backleft;
     private DcMotor Frontright;
@@ -52,12 +51,6 @@ public class PowerPlayDC extends LinearOpMode {
 //Whole Code Notes: Look at block code for denominator info.
 
     public void runOpMode() {
-        boolean goToPosition;
-        int lowJunction;
-        int mediumJunction;
-        int highJunction;
-        int positionHome;
-        int coneHeight;
         double maxPower;
         double y;
         double x;
@@ -81,17 +74,6 @@ public class PowerPlayDC extends LinearOpMode {
         Backright = hardwareMap.get(DcMotor.class, "Backright");
         GripperServo = hardwareMap.get(Servo.class, "GripperServo");
 
-        ArmMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        ArmMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        ArmMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        ArmMotor.setTargetPosition(0);
-        ArmMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        goToPosition = false;
-        lowJunction = 1700;
-        mediumJunction = 2800;
-        highJunction = 3800;
-        positionHome = 0;
-        coneHeight = 750;
         maxPower = 0.7;
 
         waitForStart();
