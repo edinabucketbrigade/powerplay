@@ -31,8 +31,8 @@ import org.openftc.easyopencv.OpenCvWebcam;
 import java.util.List;
 
 @Autonomous(name = "State Auto", group = "FtcLib")
+//@Autonomous(name = "State Auto", group = "FtcLib", preselectTeleOp = "PowerPlayDc")
 public class AutoFTCLib extends LinearOpMode {
-    //    , preselectTeleOp = "PowerPlayDC"
     // Calculate the COUNTS_PER_INCH for your specific drive train.
     // Go to your motor vendor website to determine your motor's COUNTS_PER_MOTOR_REV
     // For external drive gearing, set DRIVE_GEAR_REDUCTION as needed.
@@ -43,6 +43,8 @@ public class AutoFTCLib extends LinearOpMode {
     static final double WHEEL_DIAMETER_INCHES = 3.778;     // For figuring circumference
     static final double DRIVE_SPEED = 0.4;         // Max driving speed for better distance accuracy.
     static final double MAX_VELOCITY = 2200;
+    static double COUNTS_PER_MOTOR_REV = 480;
+    static double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
     static final double TURN_SPEED = 1;
     // Define the Proportional control coefficient (or GAIN) for "heading control".
     // We define one value when Turning (larger errors), and the other is used when Driving straight (smaller errors).
@@ -53,13 +55,19 @@ public class AutoFTCLib extends LinearOpMode {
     // How close must the heading get to the target before moving to next step.
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
     static final double HEADING_THRESHOLD = 0.0;
-    //    arm variables
-    static final double ARM_DRIVE_REDUCTION = .50;
+
+    // Arm related
+    static final double ARM_DRIVE_REDUCTION = 2;
     static final double ARM_WHEEL_DIAMETER_INCHES = 2.5;
+    static final double ARM_MOTOR_RPM = 300;
+    static final double ARM_COUNTS_PER_MOTOR_REV = 480;   // TorqueNADO
+    static final double ARM_COUNTS_PER_WHEEL_REV = (ARM_COUNTS_PER_MOTOR_REV * ARM_DRIVE_REDUCTION);
+    static final double ARM_COUNTS_PER_INCH = ARM_COUNTS_PER_WHEEL_REV / (ARM_WHEEL_DIAMETER_INCHES * 3.1415);
+    private double TPS = ((ARM_MOTOR_RPM * .75) / 60) * ARM_COUNTS_PER_WHEEL_REV;
     static final int LOW_JUNCTION = 14;
     static final int MEDIUM_JUNCTION = 24;
     static final int HIGH_JUNCTION = 34;
-    static final int HOME_POSITION = 1;
+    static final int HOME_POSITION = 0;
     static final int CONE_HEIGHT = 5;
     static final int ADJUST_ARM_INCREMENT = 1;
     //     These set the range for the gripper servo.
@@ -94,12 +102,6 @@ public class AutoFTCLib extends LinearOpMode {
     private double armVelocity = 0;
     private double armDistance = 0;
     private double armAcceleration = 0;
-    private double armCountsPerMotorRev = 1440;
-    private double armCountsPerInch = 0;
-
-    private double countsPerMotorRev = 480;
-    private double motorRPM = 300;
-    private double countsPerInch = 0;
 
     private int backLeftTarget = 0;
     private int backRightTarget = 0;
@@ -161,14 +163,7 @@ public class AutoFTCLib extends LinearOpMode {
         gamePadDrive = new GamepadEx(gamepad1);
         gamePadArm = new GamepadEx(gamepad2);
 
-
-//TODO:        Use this for GoBilda motors.
-//        countsPerMotorRev = backLeftDrive.ACHIEVABLE_MAX_TICKS_PER_SECOND;
-//        motorRPM = backLeftDrive.getMaxRPM();
-        countsPerInch = (countsPerMotorRev * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
-        armCountsPerInch = ((armCountsPerMotorRev * ARM_DRIVE_REDUCTION) / (ARM_WHEEL_DIAMETER_INCHES * 3.145));
-
-        armFeedForward = new ElevatorFeedforward(10, 20, 25);
+        armFeedForward = new ElevatorFeedforward(12, 20, 1);
         simpleFeedForward = new SimpleMotorFeedforward(2, 10);
         armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
 
@@ -329,7 +324,7 @@ public class AutoFTCLib extends LinearOpMode {
         driveTimer.reset();
 
         // Determine new target position, and pass to motor controller
-        int moveCounts = (int) (distance * countsPerInch);
+        int moveCounts = (int) (distance * COUNTS_PER_INCH);
         getCurrentPositionsFromMotors();
         backLeftTarget = backLeftPosition + moveCounts;
         backRightTarget = backRightPosition + moveCounts;
@@ -526,7 +521,7 @@ public class AutoFTCLib extends LinearOpMode {
         frontRightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         targetHeading = heading;
-        int moveCounts = (int) (distance * countsPerInch);
+        int moveCounts = (int) (distance * COUNTS_PER_INCH);
         getCurrentPositionsFromMotors();
         backLeftTarget = backLeftPosition + moveCounts;
         backRightTarget = backRightPosition + moveCounts;
@@ -675,34 +670,35 @@ public class AutoFTCLib extends LinearOpMode {
         armPosition = armMotor.getCurrentPosition();
         switch (position) {
             case HOME:
-                armTarget = HOME_POSITION * (int) armCountsPerInch;
+                armTarget = HOME_POSITION * (int) ARM_COUNTS_PER_INCH;
                 break;
             case LOW:
-                armTarget = (LOW_JUNCTION * (int) armCountsPerInch);
+                armTarget = (LOW_JUNCTION * (int) ARM_COUNTS_PER_INCH);
                 break;
             case MEDIUM:
-                armTarget = (MEDIUM_JUNCTION * (int) armCountsPerInch);
+                armTarget = (MEDIUM_JUNCTION * (int) ARM_COUNTS_PER_INCH);
                 break;
             case HIGH:
-                armTarget = (HIGH_JUNCTION * (int) armCountsPerInch);
+                armTarget = (HIGH_JUNCTION * (int) ARM_COUNTS_PER_INCH);
                 break;
             case ADJUST_UP:
-                armTarget = armPosition + (ADJUST_ARM_INCREMENT * (int) armCountsPerInch);
+                armTarget = armPosition + (ADJUST_ARM_INCREMENT * (int) ARM_COUNTS_PER_INCH);
                 break;
             case ADJUST_DOWN:
-                armTarget = armPosition - (ADJUST_ARM_INCREMENT * (int) armCountsPerInch);
+                armTarget = armPosition - (ADJUST_ARM_INCREMENT * (int) ARM_COUNTS_PER_INCH);
                 break;
             default:
                 armTarget = 0;
         }
 
         // Prevent arm moving below HOME_POSITION
-        armTarget = Math.max(armTarget, HOME_POSITION * (int) armCountsPerInch);
+        armTarget = Math.max(armTarget, HOME_POSITION * (int) ARM_COUNTS_PER_INCH);
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
         armMotor.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
         armMotor.setPositionPIDFCoefficients(8);
-        armMotor.setVelocity(MAX_VELOCITY);
+        armMotor.setTargetPositionTolerance(30);
+        armMotor.setVelocity(TPS);
 
         while (armMotor.isBusy() && !isStopRequested()) {
             armVelocity = armMotor.getVelocity();
