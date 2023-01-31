@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.arcrobotics.ftclib.controller.wpilibcontroller.ElevatorFeedforward;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
+import com.arcrobotics.ftclib.hardware.SimpleServo;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -15,7 +16,7 @@ import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
 @TeleOp(name = "PowerPlayDCJava")
-@Disabled
+//@Disabled
 public class PowerPlayDC extends LinearOpMode {
     static final double ARM_DRIVE_REDUCTION = 2;
     static final double ARM_WHEEL_DIAMETER_INCHES = 2.5;
@@ -25,10 +26,15 @@ public class PowerPlayDC extends LinearOpMode {
     static final double ARM_COUNTS_PER_INCH = ARM_COUNTS_PER_WHEEL_REV / (ARM_WHEEL_DIAMETER_INCHES * 3.1415);
     static final int LOW_JUNCTION = 14;
     static final int MEDIUM_JUNCTION = 24;
-    static final int HIGH_JUNCTION = 34;
-    static final int HOME_POSITION = 1;
+    static final int HIGH_JUNCTION = 30;
+    static final int HOME_POSITION = 0;
     static final int CONE_HEIGHT = 5;
     static final int ADJUST_ARM_INCREMENT = 1;
+    static final double GRIPPER_MIN_ANGLE = 0;
+    static final double GRIPPER_MAX_ANGLE = 45;
+    // These set the open and close positions
+    static final double GRIPPER_OPEN = 6;
+    static final double GRIPPER_CLOSED = 22;
     // Calculate velocity for arm movement.
     private double TPS = ((ARM_MOTOR_RPM * .75) / 60) * ARM_COUNTS_PER_WHEEL_REV;
 
@@ -47,7 +53,7 @@ public class PowerPlayDC extends LinearOpMode {
     private DcMotor Backleft;
     private DcMotor Frontright;
     private DcMotor Backright;
-    private Servo GripperServo;
+    private SimpleServo GripperServo;
 //Whole Code Notes: Look at block code for denominator info.
 
     public void runOpMode() {
@@ -64,7 +70,7 @@ public class PowerPlayDC extends LinearOpMode {
         armMotor.setDirection(DcMotorSimple.Direction.FORWARD);
         armMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        armFeedForward = new ElevatorFeedforward(12, 20, .9);
+        armFeedForward = new ElevatorFeedforward(12, 20, 1);
 
         gamePadArm = new GamepadEx(gamepad2);
 
@@ -72,7 +78,9 @@ public class PowerPlayDC extends LinearOpMode {
         Backleft = hardwareMap.get(DcMotor.class, "Backleft");
         Frontright = hardwareMap.get(DcMotor.class, "Frontright");
         Backright = hardwareMap.get(DcMotor.class, "Backright");
-        GripperServo = hardwareMap.get(Servo.class, "GripperServo");
+        GripperServo = new SimpleServo(hardwareMap, "GripperServo",
+                GRIPPER_MIN_ANGLE, GRIPPER_MAX_ANGLE);
+        GripperServo.setInverted(true);
 
         maxPower = 0.7;
 
@@ -98,21 +106,12 @@ public class PowerPlayDC extends LinearOpMode {
                 Backright.setPower((((y + x) - rx) / denominator) * maxPower);
 
                 //} This is commented out on purpose.
-                //if (gamepad1.right_bumper) {
-                //Frontleft.
-                //BackLeft.
-                //FrontRight.
-                //BackRight.
-
-                //}
-                //if (gamepad1.left_bumper) {
-                //Frontleft.
-                //BackLeft.
-                //FrontRight.
-                //BackRight.
-
-                //Stuff past here should be uncommented out.
-
+                if (gamePadArm.getButton(GamepadKeys.Button.RIGHT_BUMPER)) {
+                    openGripper();
+                }
+                if (gamePadArm.getButton(GamepadKeys.Button.LEFT_BUMPER)) {
+                    closeGripper();
+                }
             }
         }
 
@@ -200,8 +199,8 @@ public class PowerPlayDC extends LinearOpMode {
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         armMotor.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
-        armMotor.setPositionPIDFCoefficients(10);
-        armMotor.setTargetPositionTolerance(5);
+        armMotor.setPositionPIDFCoefficients(25);
+        armMotor.setTargetPositionTolerance(30);
         armMotor.setVelocity(TPS);
 
         while (armMotor.isBusy() && !isStopRequested()) {
@@ -214,6 +213,16 @@ public class PowerPlayDC extends LinearOpMode {
             sendTelemetry("Move Arm");
         }
     }
+
+    public void openGripper() {
+
+        GripperServo.turnToAngle(GRIPPER_OPEN);
+    }
+
+    public void closeGripper() {
+        GripperServo.turnToAngle(GRIPPER_CLOSED);
+    }
+
 
     public enum ArmPosition {
         HOME,
