@@ -6,6 +6,8 @@ import com.arcrobotics.ftclib.hardware.SimpleServo;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+
 @TeleOp(name = "Servo Tune", group = "test")
 //@Disabled
 public class RHSServoTune extends OpMode {
@@ -26,7 +28,7 @@ public class RHSServoTune extends OpMode {
     @Override
     public void init() {
         gamePadDrive = new GamepadEx(gamepad1);
-        servo = new SimpleServo(hardwareMap, "servo1", MIN_RANGE, MAX_RANGE);
+        servo = new SimpleServo(hardwareMap, "GripperServo", MIN_RANGE, MAX_RANGE);
         servo.setInverted(isInverted);
 
         telemetry.setAutoClear(false);

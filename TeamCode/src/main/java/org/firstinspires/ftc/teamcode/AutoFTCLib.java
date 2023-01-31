@@ -583,7 +583,7 @@ public class AutoFTCLib extends LinearOpMode {
         telemetry.addData("Wheel Speeds L:R.", "%5.2f : %5.2f", leftSpeed, rightSpeed);
         telemetry.addData("Arm Target", armTarget);
         telemetry.addData("Arm Position", armPosition);
-        telemetry.addData("Armm Velocity", armVelocity);
+        telemetry.addData("Arm Velocity", armVelocity);
         telemetry.addData("Feed Forward", feedForwardCalculate);
         telemetry.update();
     }
