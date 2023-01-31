@@ -100,9 +100,6 @@ public class AutoFTCLib extends LinearOpMode {
     private int armTarget = 0;
     private int armPosition = 0;
     private double armVelocity = 0;
-    private double armDistance = 0;
-    private double armAcceleration = 0;
-
     private int backLeftTarget = 0;
     private int backRightTarget = 0;
     private int frontLeftTarget = 0;
@@ -111,7 +108,6 @@ public class AutoFTCLib extends LinearOpMode {
     private int backRightPosition = 0;
     private int frontLeftPosition = 0;
     private int frontRightPosition = 0;
-
     private double turnSpeed = 0;
     private double driveSpeed = 0;
     private double leftSpeed = 0;
@@ -338,6 +334,10 @@ public class AutoFTCLib extends LinearOpMode {
         frontRightDrive.setTargetPosition(frontRightTarget);
 
         setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backLeftDrive.setPositionPIDFCoefficients(8);
+        backRightDrive.setPositionPIDFCoefficients(8);
+        frontLeftDrive.setPositionPIDFCoefficients(8);
+        frontRightDrive.setPositionPIDFCoefficients(8);
 
         // Set the required driving speed  (must be positive for RUN_TO_POSITION)
         // Start driving straight, and then enter the control loop
@@ -498,8 +498,15 @@ public class AutoFTCLib extends LinearOpMode {
         frontLeftDrive.setPower(leftSpeed);
         frontRightDrive.setPower(rightSpeed);
 
-//        leftMotors.set(simpleFeedForward.calculate(leftSpeed));
-//        rightMotors.set(simpleFeedForward.calculate(rightSpeed));
+//        backLeftDrive.setVelocity(TPS);
+//        backRightDrive.setVelocity(TPS);
+//        frontLeftDrive.setVelocity(TPS);
+//        frontRightDrive.setVelocity(TPS);
+
+//        backLeftDrive.setVelocity(simpleFeedForward.calculate(backLeftVelocity));
+//        backRightDrive.setVelocity(simpleFeedForward.calculate(backRightVelocity));
+//        frontLeftDrive.setVelocity(simpleFeedForward.calculate(frontLeftVelocity));
+//        frontRightDrive.setVelocity(simpleFeedForward.calculate(frontRightVelocity));
 
         sendTelemetry();
     }
@@ -696,8 +703,8 @@ public class AutoFTCLib extends LinearOpMode {
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
         armMotor.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
-        armMotor.setPositionPIDFCoefficients(8);
-        armMotor.setTargetPositionTolerance(30);
+        armMotor.setPositionPIDFCoefficients(10);
+        armMotor.setTargetPositionTolerance(20);
         armMotor.setVelocity(TPS);
 
         while (armMotor.isBusy() && !isStopRequested()) {

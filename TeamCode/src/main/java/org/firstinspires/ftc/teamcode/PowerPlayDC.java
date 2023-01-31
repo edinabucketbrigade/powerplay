@@ -200,7 +200,7 @@ public class PowerPlayDC extends LinearOpMode {
         armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         armMotor.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
         armMotor.setPositionPIDFCoefficients(25);
-        armMotor.setTargetPositionTolerance(30);
+        armMotor.setTargetPositionTolerance(20);
         armMotor.setVelocity(TPS);
 
         while (armMotor.isBusy() && !isStopRequested()) {
