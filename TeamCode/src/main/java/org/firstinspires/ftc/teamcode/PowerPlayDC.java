@@ -190,6 +190,9 @@ public class PowerPlayDC extends LinearOpMode {
             case ADJUST_DOWN:
                 armTarget = armPosition - (ADJUST_ARM_INCREMENT * (int) ARM_COUNTS_PER_INCH);
                 break;
+            case CONE_HEIGHT:
+                armTarget = armPosition + CONE_HEIGHT * (int) ARM_COUNTS_PER_INCH;
+                break;
             default:
                 return;
         }
@@ -230,7 +233,8 @@ public class PowerPlayDC extends LinearOpMode {
         MEDIUM,
         HIGH,
         ADJUST_UP,
-        ADJUST_DOWN
+        ADJUST_DOWN,
+        CONE_HEIGHT
     }
 
 
