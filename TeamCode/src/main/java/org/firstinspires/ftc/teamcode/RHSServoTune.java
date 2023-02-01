@@ -14,9 +14,9 @@ public class RHSServoTune extends OpMode {
     SimpleServo Gripperservo;
     boolean isInverted = false;
     private final double MIN_RANGE = 0;
-    private final double MAX_RANGE = 45;
-    private double turnToMinAngle = 6;
-    private double turnToMaxAngle = 22;
+    private final double MAX_RANGE = 180;
+    private double turnToMinAngle = 25;
+    private double turnToMaxAngle = 73;
     private GamepadEx gamePadDrive;
     private Telemetry.Item teleInverted;
     private Telemetry.Item teleTurnToMinAngle;
