@@ -682,7 +682,7 @@ public class AutoFTCLib extends LinearOpMode {
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
         armMotor.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
-        armMotor.setPositionPIDFCoefficients(10);
+        armMotor.setPositionPIDFCoefficients(25);
         armMotor.setTargetPositionTolerance(20);
         armMotor.setVelocity(TPS);
 
@@ -693,8 +693,6 @@ public class AutoFTCLib extends LinearOpMode {
             armPosition = armMotor.getCurrentPosition();
             sendTelemetry();
         }
-
-        armMotor.setPower(0);
     }
 
     /**
