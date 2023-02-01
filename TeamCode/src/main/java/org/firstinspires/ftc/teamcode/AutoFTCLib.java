@@ -43,7 +43,7 @@ public class AutoFTCLib extends LinearOpMode {
     static final double WHEEL_DIAMETER_INCHES = 3.778;     // For figuring circumference
     static final double DRIVE_SPEED = 0.4;         // Max driving speed for better distance accuracy.
     static final double MAX_VELOCITY = 2200;
-    static double COUNTS_PER_MOTOR_REV = 480;
+    static double COUNTS_PER_MOTOR_REV = 383.6;
     static double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
     static final double TURN_SPEED = 1;
     // Define the Proportional control coefficient (or GAIN) for "heading control".
@@ -54,7 +54,7 @@ public class AutoFTCLib extends LinearOpMode {
     static final double P_DRIVE_GAIN = 0.03;     // Larger is more responsive, but also less stable
     // How close must the heading get to the target before moving to next step.
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
-    static final double HEADING_THRESHOLD = 0.0;
+    static final double HEADING_THRESHOLD = 2;
 
     // Arm related
     static final double ARM_DRIVE_REDUCTION = 2;
@@ -176,7 +176,7 @@ public class AutoFTCLib extends LinearOpMode {
         frontLeftDrive.setDirection(DcMotorSimple.Direction.REVERSE);
         backRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         frontRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
-
+        setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         setMotorsPositionCoefficents(10);
 
         armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -237,14 +237,15 @@ public class AutoFTCLib extends LinearOpMode {
                     if (startPosition == StartPosition.LEFT) {
                         turnToHeading(TURN_SPEED, 90, 3);
                     }
-                    sleep(750);
+                    sleep(10000);
 
                     pathSegment = 3;
                     break;
                 case 3:
                     moveArm(ArmPosition.HIGH);
                     openGripper();
-                    pathSegment = 4;
+                    moveArm(ArmPosition.HOME);
+                    pathSegment = 6;
                     break;
                 case 4:
                     moveArm(ArmPosition.HOME);
