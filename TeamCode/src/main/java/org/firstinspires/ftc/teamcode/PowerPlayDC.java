@@ -26,15 +26,15 @@ public class PowerPlayDC extends LinearOpMode {
     static final double ARM_COUNTS_PER_INCH = ARM_COUNTS_PER_WHEEL_REV / (ARM_WHEEL_DIAMETER_INCHES * 3.1415);
     static final int LOW_JUNCTION = 14;
     static final int MEDIUM_JUNCTION = 24;
-    static final int HIGH_JUNCTION = 30;
+    static final int HIGH_JUNCTION = 34;
     static final int HOME_POSITION = 0;
     static final int CONE_HEIGHT = 5;
     static final int ADJUST_ARM_INCREMENT = 1;
     static final double GRIPPER_MIN_ANGLE = 0;
-    static final double GRIPPER_MAX_ANGLE = 45;
+    static final double GRIPPER_MAX_ANGLE = 180;
     // These set the open and close positions
-    static final double GRIPPER_OPEN = 6;
-    static final double GRIPPER_CLOSED = 22;
+    static final double GRIPPER_OPEN = 25;
+    static final double GRIPPER_CLOSED = 73;
     // Calculate velocity for arm movement.
     private double TPS = ((ARM_MOTOR_RPM * .75) / 60) * ARM_COUNTS_PER_WHEEL_REV;
 
