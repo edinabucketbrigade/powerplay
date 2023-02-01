@@ -42,10 +42,18 @@ public class AutoFTCLib extends LinearOpMode {
     static final double DRIVE_GEAR_REDUCTION = 1.0;     // No External Gearing.
     static final double WHEEL_DIAMETER_INCHES = 3.778;     // For figuring circumference
     static final double DRIVE_SPEED = 0.4;         // Max driving speed for better distance accuracy.
-    static final double MAX_VELOCITY = 2200;
-    static double COUNTS_PER_MOTOR_REV = 383.6;
-    static double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
     static final double TURN_SPEED = 1;
+    // These are for GoBilda 435 motors
+    static final double MAX_VELOCITY = 2200;
+    static final double MOTOR_RPM = 425;
+    static double COUNTS_PER_MOTOR_REV = 383.6;
+
+    //TODO: These are for TorqweNado 20:1
+//    static final double MOTOR_RPM = 300;
+//    static double COUNTS_PER_MOTOR_REV = 480;
+    static double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
+    static double MOTOR_TPS = ((MOTOR_RPM * .75) / 60) * COUNTS_PER_MOTOR_REV;
+
     // Define the Proportional control coefficient (or GAIN) for "heading control".
     // We define one value when Turning (larger errors), and the other is used when Driving straight (smaller errors).
     // Increase these numbers if the heading does not corrects strongly enough (eg: a heavy robot or using tracks)
@@ -54,13 +62,13 @@ public class AutoFTCLib extends LinearOpMode {
     static final double P_DRIVE_GAIN = 0.03;     // Larger is more responsive, but also less stable
     // How close must the heading get to the target before moving to next step.
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
-    static final double HEADING_THRESHOLD = 2;
+    static final double HEADING_THRESHOLD = 1;
 
     // Arm related
     static final double ARM_DRIVE_REDUCTION = 2;
     static final double ARM_WHEEL_DIAMETER_INCHES = 2.5;
     static final double ARM_MOTOR_RPM = 300;
-    static final double ARM_COUNTS_PER_MOTOR_REV = 480;   // TorqueNADO
+    static final double ARM_COUNTS_PER_MOTOR_REV = 480;   // TorqueNADO 20:1
     static final double ARM_COUNTS_PER_WHEEL_REV = (ARM_COUNTS_PER_MOTOR_REV * ARM_DRIVE_REDUCTION);
     static final double ARM_COUNTS_PER_INCH = ARM_COUNTS_PER_WHEEL_REV / (ARM_WHEEL_DIAMETER_INCHES * 3.1415);
     private double TPS = ((ARM_MOTOR_RPM * .75) / 60) * ARM_COUNTS_PER_WHEEL_REV;
@@ -72,10 +80,10 @@ public class AutoFTCLib extends LinearOpMode {
     static final int ADJUST_ARM_INCREMENT = 1;
     //     These set the range for the gripper servo.
     static final double GRIPPER_MIN_ANGLE = 0;
-    static final double GRIPPER_MAX_ANGLE = 45;
+    static final double GRIPPER_MAX_ANGLE = 180;
     // These set the open and close positions
-    static final double GRIPPER_OPEN = 6;
-    static final double GRIPPER_CLOSED = 22;
+    static final double GRIPPER_OPEN = 25;
+    static final double GRIPPER_CLOSED = 73;
     static final double MAX_POWER = 0.4;
     private int pathSegment;
     private StartPosition startPosition = StartPosition.NONE;
@@ -83,7 +91,6 @@ public class AutoFTCLib extends LinearOpMode {
     private SleeveDetection sleeveDetection;
     private OpenCvWebcam camera;
     private IMU imu;
-    private GamepadEx gamePadArm;
     private GamepadEx gamePadDrive;
     private String WEB_CAM_NAME = "Webcam 1";
     private SleeveDetection.ParkingPosition parkLocation;
@@ -97,6 +104,8 @@ public class AutoFTCLib extends LinearOpMode {
     private MecanumDrive driveRobot;
     private SimpleMotorFeedforward simpleFeedForward;
     private SimpleServo gripperServo;
+
+    // Variables below are mostly for telemetry.
     private int armTarget = 0;
     private int armPosition = 0;
     private double armVelocity = 0;
@@ -138,7 +147,6 @@ public class AutoFTCLib extends LinearOpMode {
         // Note: if you choose two conflicting directions, this initialization will cause a code exception.
         imu.initialize(new IMU.Parameters(orientationOnRobot));
         imu.resetYaw();
-        resetHeading();
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         camera = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, WEB_CAM_NAME), cameraMonitorViewId);
@@ -157,11 +165,11 @@ public class AutoFTCLib extends LinearOpMode {
         });
 
         gamePadDrive = new GamepadEx(gamepad1);
-        gamePadArm = new GamepadEx(gamepad2);
 
         armFeedForward = new ElevatorFeedforward(12, 20, 1);
-        simpleFeedForward = new SimpleMotorFeedforward(2, 10);
         armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
+        armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         backLeftDrive = hardwareMap.get(DcMotorEx.class, "Backleft");
         backRightDrive = hardwareMap.get(DcMotorEx.class, "Backright");
@@ -178,12 +186,9 @@ public class AutoFTCLib extends LinearOpMode {
         frontRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         setMotorsPositionCoefficents(10);
-
-        armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        simpleFeedForward = new SimpleMotorFeedforward(2, 10);
 
         gripperServo = new SimpleServo(hardwareMap, "GripperServo", GRIPPER_MIN_ANGLE, GRIPPER_MAX_ANGLE);
-        gripperServo.setInverted(true);
         openGripper();
 
         // Choose your start position.
@@ -204,29 +209,30 @@ public class AutoFTCLib extends LinearOpMode {
             }
 
             telemetry.addLine("Select start position");
-            telemetry.addLine("X=Left, B=Right, Start=adjust camera");
-            telemetry.addData("Position: ", startPosition);
+            telemetry.addLine("X=Left, B=Right, Start=Adjust Camera");
+            telemetry.addData("Position:", startPosition);
             telemetry.update();
         }
 
         // Adjust the camera here.
         while (!isStarted() && !isStopRequested()) {
             parkLocation = getParkLocation();
-            telemetry.addData("Start Position: ", startPosition);
-            telemetry.addData("Park Location: ", parkLocation);
+            telemetry.addData("Start Position:", startPosition);
+            telemetry.addData("Park Location:", parkLocation);
             telemetry.update();
         }
 
         waitForStart();
         // Save processing time, we are finished with the camera.
         camera.stopStreaming();
+        camera.closeCameraDevice();
 
         pathSegment = 1;
         while (opModeIsActive() && !isStopRequested()) {
             switch (pathSegment) {
                 case 1:
                     closeGripper();
-                    driveStraight(DRIVE_SPEED, 108, 0, 3);
+                    driveStraight(DRIVE_SPEED, 36, 0, 3);
                     sleep(750);
                     pathSegment = 2;
                     break;
@@ -237,17 +243,26 @@ public class AutoFTCLib extends LinearOpMode {
                     if (startPosition == StartPosition.LEFT) {
                         turnToHeading(TURN_SPEED, 90, 3);
                     }
-                    sleep(10000);
-
+                    sleep(750);
                     pathSegment = 3;
                     break;
                 case 3:
+                    if (startPosition == StartPosition.RIGHT) {
+                        driveStraight(DRIVE_SPEED, 24, -90, 3);
+                    }
+                    if (startPosition == StartPosition.LEFT) {
+                        driveStraight(DRIVE_SPEED, 24, 90, 3);
+                    }
+                    sleep(750);
+                    pathSegment = 7;
+                    break;
+                case 4:
                     moveArm(ArmPosition.HIGH);
                     openGripper();
                     moveArm(ArmPosition.HOME);
                     pathSegment = 6;
                     break;
-                case 4:
+                case 5:
                     moveArm(ArmPosition.HOME);
                     sleep(500);
                     if (startPosition == StartPosition.RIGHT) {
@@ -258,9 +273,9 @@ public class AutoFTCLib extends LinearOpMode {
                     }
                     sleep(750);
                     driveStraight(DRIVE_SPEED, -60, 0, 3);
-                    pathSegment = 5;
+                    pathSegment = 6;
                     break;
-                case 5:
+                case 6:
                     // Where did the camera tell us to park?
                     switch (parkLocation) {
                         case LEFT:
@@ -272,9 +287,9 @@ public class AutoFTCLib extends LinearOpMode {
                             strafeRobot(DRIVE_SPEED, 24, 90, STRAFE_TIMEOUT);
                             break;
                     }
-                    pathSegment = 6;
+                    pathSegment = 7;
                     break;
-                case 6:
+                case 7:
                     telemetry.addData("Status", "Path complete.");
                     telemetry.update();
                     break;
@@ -319,7 +334,7 @@ public class AutoFTCLib extends LinearOpMode {
 
         ElapsedTime driveTimer = new ElapsedTime();
         driveTimer.reset();
-
+        setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         // Determine new target position, and pass to motor controller
         int moveCounts = (int) (distance * COUNTS_PER_INCH);
         getCurrentPositionsFromMotors();
@@ -364,9 +379,6 @@ public class AutoFTCLib extends LinearOpMode {
             // Apply the turning correction to the current driving speed.
             moveRobot(maxDriveSpeed, turnSpeed);
         }
-
-//         Stop all motion
-//        stopAllMotors();
     }
 
     /**
@@ -494,15 +506,15 @@ public class AutoFTCLib extends LinearOpMode {
             rightSpeed /= max;
         }
 
-        backLeftDrive.setPower(leftSpeed);
-        backRightDrive.setPower(rightSpeed);
-        frontLeftDrive.setPower(leftSpeed);
-        frontRightDrive.setPower(rightSpeed);
+//        backLeftDrive.setPower(leftSpeed);
+//        backRightDrive.setPower(rightSpeed);
+//        frontLeftDrive.setPower(leftSpeed);
+//        frontRightDrive.setPower(rightSpeed);
 
-//        backLeftDrive.setVelocity(TPS);
-//        backRightDrive.setVelocity(TPS);
-//        frontLeftDrive.setVelocity(TPS);
-//        frontRightDrive.setVelocity(TPS);
+        backLeftDrive.setVelocity(powerToTPS(leftSpeed));
+        backRightDrive.setVelocity(powerToTPS(rightSpeed));
+        frontLeftDrive.setVelocity(powerToTPS(leftSpeed));
+        frontRightDrive.setVelocity(powerToTPS(rightSpeed));
 
 //        backLeftDrive.setVelocity(simpleFeedForward.calculate(backLeftVelocity));
 //        backRightDrive.setVelocity(simpleFeedForward.calculate(backRightVelocity));
@@ -523,11 +535,7 @@ public class AutoFTCLib extends LinearOpMode {
     public void strafeRobot(double strafeSpeed, double distance, double heading, int strafeTime) {
         ElapsedTime strafeTimer = new ElapsedTime();
         strafeTimer.reset();
-        backLeftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        backRightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        frontLeftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        frontRightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
+        setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         targetHeading = heading;
         int moveCounts = (int) (distance * COUNTS_PER_INCH);
         getCurrentPositionsFromMotors();
@@ -565,8 +573,6 @@ public class AutoFTCLib extends LinearOpMode {
             frontRightDrive.setPower(strafeSpeed);
             sendTelemetry();
         }
-
-//        stopAllMotors();
     }
 
     /**
@@ -642,37 +648,6 @@ public class AutoFTCLib extends LinearOpMode {
         robotHeading = 0;
     }
 
-    public void ProcessArm() {
-        // Adjust position
-        if (gamePadArm.wasJustPressed(GamepadKeys.Button.DPAD_DOWN)) {
-            moveArm(ArmPosition.ADJUST_DOWN);
-        }
-
-        if (gamePadArm.wasJustPressed(GamepadKeys.Button.DPAD_UP)) {
-            moveArm(ArmPosition.ADJUST_UP);
-        }
-
-        // Low junction
-        if (gamePadArm.wasJustPressed(GamepadKeys.Button.A)) {
-            moveArm(ArmPosition.LOW);
-        }
-
-        // medium junction
-        if (gamePadArm.wasJustPressed(GamepadKeys.Button.B)) {
-            moveArm(ArmPosition.MEDIUM);
-        }
-
-        // high junction
-        if (gamePadArm.wasJustPressed(GamepadKeys.Button.Y)) {
-            moveArm(ArmPosition.HIGH);
-        }
-
-        // ground junction
-        if (gamePadArm.wasJustPressed(GamepadKeys.Button.X)) {
-            moveArm(ArmPosition.HOME);
-        }
-    }
-
     public void moveArm(ArmPosition position) {
 
         armPosition = armMotor.getCurrentPosition();
@@ -694,6 +669,9 @@ public class AutoFTCLib extends LinearOpMode {
                 break;
             case ADJUST_DOWN:
                 armTarget = armPosition - (ADJUST_ARM_INCREMENT * (int) ARM_COUNTS_PER_INCH);
+                break;
+            case CONE_HEIGHT:
+                armTarget = armPosition + CONE_HEIGHT * (int) ARM_COUNTS_PER_INCH;
                 break;
             default:
                 armTarget = 0;
@@ -719,14 +697,25 @@ public class AutoFTCLib extends LinearOpMode {
         armMotor.setPower(0);
     }
 
+    /**
+     * Convert power to velocity.
+     * double TPS = (power/60) * COUNTS_PER_MOTOR_REV;
+     * ! For drive motors, not arm.
+     *
+     * @param power A motor power within -1 to 1.
+     * @return Ticks per second for use in velocity.
+     */
+    private double powerToTPS(double power) {
+        return ((power * MOTOR_RPM) / 60) * COUNTS_PER_MOTOR_REV;
+    }
 
     public void openGripper() {
-
         gripperServo.turnToAngle(GRIPPER_OPEN);
     }
 
     public void closeGripper() {
         gripperServo.turnToAngle(GRIPPER_CLOSED);
+        moveArm(ArmPosition.CONE_HEIGHT);
     }
 
 
@@ -736,7 +725,8 @@ public class AutoFTCLib extends LinearOpMode {
         MEDIUM,
         HIGH,
         ADJUST_UP,
-        ADJUST_DOWN
+        ADJUST_DOWN,
+        CONE_HEIGHT
     }
 
     public enum StartPosition {
