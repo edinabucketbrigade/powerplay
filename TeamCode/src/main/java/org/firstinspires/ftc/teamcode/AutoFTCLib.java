@@ -74,8 +74,8 @@ public class AutoFTCLib extends LinearOpMode {
     static final double GRIPPER_MIN_ANGLE = 0;
     static final double GRIPPER_MAX_ANGLE = 45;
     // These set the open and close positions
-    static final double GRIPPER_OPEN = 12;
-    static final double GRIPPER_CLOSED = 23;
+    static final double GRIPPER_OPEN = 6;
+    static final double GRIPPER_CLOSED = 22;
     static final double MAX_POWER = 0.4;
     private int pathSegment;
     private StartPosition startPosition = StartPosition.NONE;
