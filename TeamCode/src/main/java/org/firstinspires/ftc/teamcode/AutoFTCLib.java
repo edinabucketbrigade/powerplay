@@ -62,7 +62,8 @@ public class AutoFTCLib extends LinearOpMode {
     static final double P_DRIVE_GAIN = 0.03;     // Larger is more responsive, but also less stable
     // How close must the heading get to the target before moving to next step.
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
-    static final double HEADING_THRESHOLD = 1;
+    static final double HEADING_THRESHOLD = .8;
+    static final double NOTOR_POSITION_COEFFICENT = 8;
 
     // Arm related
     static final double ARM_DRIVE_REDUCTION = 2;
@@ -104,8 +105,6 @@ public class AutoFTCLib extends LinearOpMode {
     private MecanumDrive driveRobot;
     private SimpleMotorFeedforward simpleFeedForward;
     private SimpleServo gripperServo;
-
-    // Variables below are mostly for telemetry.
     private int armTarget = 0;
     private int armPosition = 0;
     private double armVelocity = 0;
@@ -117,6 +116,10 @@ public class AutoFTCLib extends LinearOpMode {
     private int backRightPosition = 0;
     private int frontLeftPosition = 0;
     private int frontRightPosition = 0;
+    private double backLeftVelocity = 0;
+    private double backRightVelocity = 0;
+    private double frontLeftVelocity = 0;
+    private double frontRightVelocity = 0;
     private double turnSpeed = 0;
     private double driveSpeed = 0;
     private double leftSpeed = 0;
@@ -350,23 +353,17 @@ public class AutoFTCLib extends LinearOpMode {
         frontRightDrive.setTargetPosition(frontRightTarget);
 
         setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
-        backLeftDrive.setPositionPIDFCoefficients(8);
-        backRightDrive.setPositionPIDFCoefficients(8);
-        frontLeftDrive.setPositionPIDFCoefficients(8);
-        frontRightDrive.setPositionPIDFCoefficients(8);
+        setMotorsPositionCoefficents(NOTOR_POSITION_COEFFICENT);
 
         // Set the required driving speed  (must be positive for RUN_TO_POSITION)
         // Start driving straight, and then enter the control loop
         maxDriveSpeed = Math.abs(maxDriveSpeed);
         moveRobot(maxDriveSpeed, 0);
 
-        // keep looping while we are still active, and all motors are running.
+        // keep looping while we are still active, and any motors are running.
         while (opModeIsActive() &&
                 !isStopRequested() &&
-                (backLeftDrive.isBusy() &&
-                        backRightDrive.isBusy() &&
-                        frontLeftDrive.isBusy() &&
-                        frontRightDrive.isBusy()) &&
+                (backLeftDrive.isBusy() || backRightDrive.isBusy() || frontLeftDrive.isBusy() || frontRightDrive.isBusy()) &&
                 (driveTimer.time() < driveTime)) {
 
             // Determine required steering to keep on heading
@@ -506,16 +503,12 @@ public class AutoFTCLib extends LinearOpMode {
             rightSpeed /= max;
         }
 
-//        backLeftDrive.setPower(leftSpeed);
-//        backRightDrive.setPower(rightSpeed);
-//        frontLeftDrive.setPower(leftSpeed);
-//        frontRightDrive.setPower(rightSpeed);
-
         backLeftDrive.setVelocity(powerToTPS(leftSpeed));
         backRightDrive.setVelocity(powerToTPS(rightSpeed));
         frontLeftDrive.setVelocity(powerToTPS(leftSpeed));
         frontRightDrive.setVelocity(powerToTPS(rightSpeed));
 
+//        getVelocityFromMotors();
 //        backLeftDrive.setVelocity(simpleFeedForward.calculate(backLeftVelocity));
 //        backRightDrive.setVelocity(simpleFeedForward.calculate(backRightVelocity));
 //        frontLeftDrive.setVelocity(simpleFeedForward.calculate(frontLeftVelocity));
@@ -608,6 +601,13 @@ public class AutoFTCLib extends LinearOpMode {
         backRightPosition = backRightDrive.getCurrentPosition();
         frontLeftPosition = frontLeftDrive.getCurrentPosition();
         frontRightPosition = frontRightDrive.getCurrentPosition();
+    }
+
+    public void getVelocityFromMotors() {
+        backLeftVelocity = backLeftDrive.getVelocity();
+        backRightVelocity = backRightDrive.getVelocity();
+        frontLeftVelocity = frontLeftDrive.getVelocity();
+        frontRightVelocity = frontRightDrive.getVelocity();
     }
 
     public void setMotorsMode(DcMotor.RunMode mode) {
