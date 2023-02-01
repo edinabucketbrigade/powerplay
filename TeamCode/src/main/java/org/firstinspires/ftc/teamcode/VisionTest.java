@@ -7,12 +7,13 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
+import org.openftc.easyopencv.OpenCvWebcam;
 
 @Autonomous(name = "Signal Sleeve Test")
 public class VisionTest extends LinearOpMode {
 
     SleeveDetection sleeveDetection;
-    OpenCvCamera camera;
+    OpenCvWebcam camera;
     
     // Name of the Webcam to be set in the config
     String webcamName = "webcam1";
