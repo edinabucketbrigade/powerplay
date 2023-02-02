@@ -24,7 +24,7 @@ public class RHSMaxVelocity extends LinearOpMode {
     @Override
     public void runOpMode() {
         timer = new ElapsedTime();
-        motor = hardwareMap.get(DcMotorEx.class, "leftbackdrive");
+        motor = hardwareMap.get(DcMotorEx.class, "BackLeft");
         waitForStart();
         while (opModeIsActive()) {
             timer.reset();
