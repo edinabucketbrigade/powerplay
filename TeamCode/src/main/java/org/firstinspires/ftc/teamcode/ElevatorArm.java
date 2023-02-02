@@ -1,15 +1,11 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.graphics.Path;
-
 import com.arcrobotics.ftclib.controller.wpilibcontroller.ElevatorFeedforward;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-
-import org.firstinspires.ftc.robotcore.external.Telemetry;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 public class ElevatorArm {
     private final DcMotorEx armMotor;
@@ -89,6 +85,18 @@ public class ElevatorArm {
 
     public double getArmPosition() {
         return armPosition;
+    }
+
+    public PIDFCoefficients getVelocityCoefficients() {
+        return armMotor.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+
+    public PIDFCoefficients getPositionPIDFCoefficients() {
+        return armMotor.getPIDFCoefficients(DcMotor.RunMode.RUN_TO_POSITION);
+    }
+
+    public int getPositionTolerance() {
+        return armMotor.getTargetPositionTolerance();
     }
 
     public enum ArmPosition {

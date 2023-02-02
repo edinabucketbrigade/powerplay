@@ -35,6 +35,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 /**
@@ -85,6 +86,7 @@ public class ElevatorArmTester extends OpMode {
         telemetry.addData("Status", "Run Time: " + runtime.toString());
         ProcessArm();
         telemetry.addData("Arm Position", elevatorArm.getArmPosition());
+        telemetry.addData("Tolerance", elevatorArm.getPositionTolerance());
     }
 
     public void ProcessArm() {
