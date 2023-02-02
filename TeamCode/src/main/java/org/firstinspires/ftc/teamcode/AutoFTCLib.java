@@ -1,9 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 
-import com.arcrobotics.ftclib.controller.wpilibcontroller.ElevatorFeedforward;
 import com.arcrobotics.ftclib.controller.wpilibcontroller.SimpleMotorFeedforward;
-import com.arcrobotics.ftclib.drivebase.MecanumDrive;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.arcrobotics.ftclib.hardware.SimpleServo;
@@ -42,15 +40,14 @@ public class AutoFTCLib extends LinearOpMode {
     static final double DRIVE_GEAR_REDUCTION = 1.0;     // No External Gearing.
     static final double WHEEL_DIAMETER_INCHES = 3.778;     // For figuring circumference
     static final double DRIVE_SPEED = 0.4;         // Max driving speed for better distance accuracy.
-    static final double TURN_SPEED = 1;
+    static final double TURN_SPEED = 0.4;
     // These are for GoBilda 435 motors
-    static final double MAX_VELOCITY = 2200;
     static final double MOTOR_RPM = 425;
     static double COUNTS_PER_MOTOR_REV = 383.6;
 
     //TODO: These are for TorqweNado 20:1
-//    static final double MOTOR_RPM = 300;
-//    static double COUNTS_PER_MOTOR_REV = 480;
+    //    static final double MOTOR_RPM = 300;
+    //    static double COUNTS_PER_MOTOR_REV = 480;
     static double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
     static double MOTOR_TPS = ((MOTOR_RPM * .75) / 60) * COUNTS_PER_MOTOR_REV;
 
@@ -100,7 +97,8 @@ public class AutoFTCLib extends LinearOpMode {
     private DcMotorEx frontLeftDrive;
     private DcMotorEx frontRightDrive;
     private DcMotorEx armMotor = null;
-    private SimpleMotorFeedforward simpleFeedForward;
+    //TODO: Test this to see if it adds anything
+    //    private SimpleMotorFeedforward simpleFeedForward;
     private SimpleServo gripperServo;
     private int armTarget = 0;
     private int armPosition = 0;
@@ -184,8 +182,10 @@ public class AutoFTCLib extends LinearOpMode {
         backRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         frontRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        setMotorsPositionCoefficents(10);
-        simpleFeedForward = new SimpleMotorFeedforward(2, 10);
+        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
+
+        //TODO: Maybe this will help. Test it.
+        // simpleFeedForward = new SimpleMotorFeedforward(2, 10);
 
         gripperServo = new SimpleServo(hardwareMap, "GripperServo", GRIPPER_MIN_ANGLE, GRIPPER_MAX_ANGLE);
         openGripper();
@@ -348,8 +348,10 @@ public class AutoFTCLib extends LinearOpMode {
         frontLeftDrive.setTargetPosition(frontLeftTarget);
         frontRightDrive.setTargetPosition(frontRightTarget);
 
+        // Set SDK Pidf values
         setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
-        setMotorsPositionCoefficents(MOTOR_POSITION_COEFFICIENT);
+        setMotorVelocityCoefficients();
+        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
 
         // Set the required driving speed  (must be positive for RUN_TO_POSITION)
         // Start driving straight, and then enter the control loop
@@ -391,6 +393,8 @@ public class AutoFTCLib extends LinearOpMode {
         turnTimer.reset();
 
         setMotorsMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        setMotorVelocityCoefficients();
+        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
 
         // Run getSteeringCorrection() once to pre-calculate the current error
         getSteeringCorrection(heading, P_DRIVE_GAIN);
@@ -612,11 +616,18 @@ public class AutoFTCLib extends LinearOpMode {
         frontRightDrive.setMode(mode);
     }
 
-    public void setMotorsPositionCoefficents(double PositionCoefficent) {
+    public void setMotorsPositionCoefficients(double PositionCoefficent) {
         backLeftDrive.setPositionPIDFCoefficients(PositionCoefficent);
         backRightDrive.setPositionPIDFCoefficients(PositionCoefficent);
         frontLeftDrive.setPositionPIDFCoefficients(PositionCoefficent);
         frontRightDrive.setPositionPIDFCoefficients(PositionCoefficent);
+    }
+
+    public void setMotorVelocityCoefficients() {
+        backLeftDrive.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
+        backRightDrive.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
+        frontLeftDrive.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
+        frontRightDrive.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
     }
 
     public void stopAllMotors() {
