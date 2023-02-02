@@ -1,22 +1,23 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.graphics.Path;
+
 import com.arcrobotics.ftclib.controller.wpilibcontroller.ElevatorFeedforward;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
-public class ElavatorArm {
+public class ElevatorArm {
     private final DcMotorEx armMotor;
-    LinearOpMode opMode;
-    Telemetry telemetry;
+    OpMode opMode;
 
-    public ElavatorArm(DcMotorEx armMotor, Telemetry telemetry, LinearOpMode opMode) {
+    public ElevatorArm(DcMotorEx armMotor, OpMode opMode) {
         this.armMotor = armMotor;
         this.opMode = opMode;
-        this.telemetry = telemetry;
 
         armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -75,17 +76,19 @@ public class ElavatorArm {
         armTarget = Math.max(armTarget, HOME_POSITION * (int) ARM_COUNTS_PER_INCH);
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-        armMotor.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
-        armMotor.setPositionPIDFCoefficients(25);
-        armMotor.setTargetPositionTolerance(20);
+        armMotor.setVelocityPIDFCoefficients(1.09, 0.109, 0, 10.9);
+        armMotor.setPositionPIDFCoefficients(15);
+        armMotor.setTargetPositionTolerance(10);
         armMotor.setVelocity(TPS);
 
-        while (armMotor.isBusy() && !opMode.isStopRequested()) {
+        while (armMotor.isBusy()) {
             armVelocity = armMotor.getVelocity();
-            feedForwardCalculate = armFeedForward.calculate(armVelocity);
-            armMotor.setPower(feedForwardCalculate);
             armPosition = armMotor.getCurrentPosition();
         }
+    }
+
+    public double getArmPosition() {
+        return armPosition;
     }
 
     public enum ArmPosition {

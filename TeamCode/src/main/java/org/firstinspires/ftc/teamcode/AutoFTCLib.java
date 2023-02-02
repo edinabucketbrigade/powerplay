@@ -63,7 +63,7 @@ public class AutoFTCLib extends LinearOpMode {
     // How close must the heading get to the target before moving to next step.
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
     static final double HEADING_THRESHOLD = .8;
-    static final double NOTOR_POSITION_COEFFICENT = 8;
+    static final double MOTOR_POSITION_COEFFICIENT = 8;
 
     // Arm related
     static final double ARM_DRIVE_REDUCTION = 2;
@@ -100,9 +100,6 @@ public class AutoFTCLib extends LinearOpMode {
     private DcMotorEx frontLeftDrive;
     private DcMotorEx frontRightDrive;
     private DcMotorEx armMotor = null;
-    private ElevatorFeedforward armFeedForward;
-    private double feedForwardCalculate;
-    private MecanumDrive driveRobot;
     private SimpleMotorFeedforward simpleFeedForward;
     private SimpleServo gripperServo;
     private int armTarget = 0;
@@ -169,7 +166,6 @@ public class AutoFTCLib extends LinearOpMode {
 
         gamePadDrive = new GamepadEx(gamepad1);
 
-        armFeedForward = new ElevatorFeedforward(12, 20, 1);
         armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
         armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -237,7 +233,7 @@ public class AutoFTCLib extends LinearOpMode {
                     closeGripper();
                     driveStraight(DRIVE_SPEED, 36, 0, 3);
                     sleep(750);
-                    pathSegment = 2;
+                    pathSegment = 6;
                     break;
                 case 2:
                     if (startPosition == StartPosition.RIGHT) {
@@ -353,7 +349,7 @@ public class AutoFTCLib extends LinearOpMode {
         frontRightDrive.setTargetPosition(frontRightTarget);
 
         setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
-        setMotorsPositionCoefficents(NOTOR_POSITION_COEFFICENT);
+        setMotorsPositionCoefficents(MOTOR_POSITION_COEFFICIENT);
 
         // Set the required driving speed  (must be positive for RUN_TO_POSITION)
         // Start driving straight, and then enter the control loop
@@ -591,7 +587,6 @@ public class AutoFTCLib extends LinearOpMode {
         telemetry.addData("Arm Target", armTarget);
         telemetry.addData("Arm Position", armPosition);
         telemetry.addData("Arm Velocity", armVelocity);
-        telemetry.addData("Feed Forward", feedForwardCalculate);
         telemetry.update();
     }
 
@@ -681,15 +676,13 @@ public class AutoFTCLib extends LinearOpMode {
         armTarget = Math.max(armTarget, HOME_POSITION * (int) ARM_COUNTS_PER_INCH);
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-        armMotor.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
-        armMotor.setPositionPIDFCoefficients(25);
-        armMotor.setTargetPositionTolerance(20);
+        armMotor.setVelocityPIDFCoefficients(1.09, 0.109, 0, 10.9);
+        armMotor.setPositionPIDFCoefficients(15);
+        armMotor.setTargetPositionTolerance(10);
         armMotor.setVelocity(TPS);
 
         while (armMotor.isBusy() && !isStopRequested()) {
             armVelocity = armMotor.getVelocity();
-            feedForwardCalculate = armFeedForward.calculate(armVelocity);
-            armMotor.setPower(feedForwardCalculate);
             armPosition = armMotor.getCurrentPosition();
             sendTelemetry();
         }

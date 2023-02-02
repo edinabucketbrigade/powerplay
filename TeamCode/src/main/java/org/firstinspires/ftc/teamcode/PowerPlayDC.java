@@ -39,16 +39,13 @@ public class PowerPlayDC extends LinearOpMode {
     private double TPS = ((ARM_MOTOR_RPM * .75) / 60) * ARM_COUNTS_PER_WHEEL_REV;
 
     private DcMotorEx armMotor = null;
-    private ElevatorFeedforward armFeedForward;
     private GamepadEx gamePadArm;
     private int armTarget = 0;
     private int armPosition = 0;
     private ArmPosition selectedPosition;
     private double armVelocity = 0;
     private double armCurrent = 0;
-    private double feedForwardCalculate = 0;
     private boolean isBusy = false;
-
     private DcMotor Frontleft;
     private DcMotor Backleft;
     private DcMotor Frontright;
@@ -69,8 +66,6 @@ public class PowerPlayDC extends LinearOpMode {
         armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
         armMotor.setDirection(DcMotorSimple.Direction.FORWARD);
         armMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        armFeedForward = new ElevatorFeedforward(12, 20, 1);
 
         gamePadArm = new GamepadEx(gamepad2);
 
@@ -125,7 +120,6 @@ public class PowerPlayDC extends LinearOpMode {
         telemetry.addData("Velocity", armVelocity);
         telemetry.addData("Current", armCurrent);
         telemetry.addData("Busy", isBusy);
-        telemetry.addData("Feed Forward", feedForwardCalculate);
         telemetry.addData("Pos Tolerance", armMotor.getTargetPositionTolerance());
         telemetry.update();
     }
@@ -201,31 +195,26 @@ public class PowerPlayDC extends LinearOpMode {
         armTarget = Math.max(armTarget, HOME_POSITION * (int) ARM_COUNTS_PER_INCH);
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        armMotor.setVelocityPIDFCoefficients(1.26, 0.126, 0, 12.6);
-        armMotor.setPositionPIDFCoefficients(25);
-        armMotor.setTargetPositionTolerance(20);
+        armMotor.setVelocityPIDFCoefficients(1.09, 0.109, 0, 10.9);
+        armMotor.setPositionPIDFCoefficients(15);
+        armMotor.setTargetPositionTolerance(10);
         armMotor.setVelocity(TPS);
 
         while (armMotor.isBusy() && !isStopRequested()) {
             armVelocity = armMotor.getVelocity();
-            feedForwardCalculate = armFeedForward.calculate(armVelocity);
-            armMotor.setPower(feedForwardCalculate);
             armPosition = armMotor.getCurrentPosition();
             armCurrent = armMotor.getCurrent(CurrentUnit.AMPS);
-            isBusy = armMotor.isBusy();
             sendTelemetry("Move Arm");
         }
     }
 
     public void openGripper() {
-
         GripperServo.turnToAngle(GRIPPER_OPEN);
     }
 
     public void closeGripper() {
         GripperServo.turnToAngle(GRIPPER_CLOSED);
     }
-
 
     public enum ArmPosition {
         HOME,
@@ -236,6 +225,4 @@ public class PowerPlayDC extends LinearOpMode {
         ADJUST_DOWN,
         CONE_HEIGHT
     }
-
-
 }
