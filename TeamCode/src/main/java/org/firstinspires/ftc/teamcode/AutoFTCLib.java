@@ -61,21 +61,7 @@ public class AutoFTCLib extends LinearOpMode {
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
     static final double HEADING_THRESHOLD = .8;
     static final double MOTOR_POSITION_COEFFICIENT = 8;
-
-    // Arm related
-    static final double ARM_DRIVE_REDUCTION = 1.75;
-    static final double ARM_WHEEL_DIAMETER_INCHES = 2.5;
-    static final double ARM_MOTOR_RPM = 300;
-    static final double ARM_COUNTS_PER_MOTOR_REV = 480;   // TorqueNADO 20:1
-    static final double ARM_COUNTS_PER_WHEEL_REV = (ARM_COUNTS_PER_MOTOR_REV * ARM_DRIVE_REDUCTION);
-    static final double ARM_COUNTS_PER_INCH = ARM_COUNTS_PER_WHEEL_REV / (ARM_WHEEL_DIAMETER_INCHES * 3.1415);
-    private double TPS = ((ARM_MOTOR_RPM * .75) / 60) * ARM_COUNTS_PER_WHEEL_REV;
-    static final int LOW_JUNCTION = 17;
-    static final int MEDIUM_JUNCTION = 27;
-    static final int HIGH_JUNCTION = 37;
-    static final int HOME_POSITION = 0;
-    static final int CONE_HEIGHT = 5;
-    static final int ADJUST_ARM_INCREMENT = 1;
+    private ElevatorArm elevatorArm;
     //     These set the range for the gripper servo.
     static final double GRIPPER_MIN_ANGLE = 0;
     static final double GRIPPER_MAX_ANGLE = 180;
@@ -100,9 +86,6 @@ public class AutoFTCLib extends LinearOpMode {
     //TODO: Test this to see if it adds anything
     //    private SimpleMotorFeedforward simpleFeedForward;
     private SimpleServo gripperServo;
-    private int armTarget = 0;
-    private int armPosition = 0;
-    private double armVelocity = 0;
     private int backLeftTarget = 0;
     private int backRightTarget = 0;
     private int frontLeftTarget = 0;
@@ -165,8 +148,8 @@ public class AutoFTCLib extends LinearOpMode {
         gamePadDrive = new GamepadEx(gamepad1);
 
         armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
-        armMotor.setDirection(DcMotorSimple.Direction.FORWARD);
-        armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        // Arm functions are handled by elevatorArm
+        elevatorArm = new ElevatorArm(armMotor, this);
 
         backLeftDrive = hardwareMap.get(DcMotorEx.class, "Backleft");
         backRightDrive = hardwareMap.get(DcMotorEx.class, "Backright");
@@ -256,13 +239,13 @@ public class AutoFTCLib extends LinearOpMode {
                     pathSegment = 7;
                     break;
                 case 4:
-                    moveArm(ArmPosition.HIGH);
+                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HIGH);
                     openGripper();
-                    moveArm(ArmPosition.HOME);
+                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
                     pathSegment = 6;
                     break;
                 case 5:
-                    moveArm(ArmPosition.HOME);
+                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
                     sleep(500);
                     if (startPosition == StartPosition.RIGHT) {
                         turnToHeading(TURN_SPEED, 90, 3);
@@ -588,9 +571,6 @@ public class AutoFTCLib extends LinearOpMode {
         telemetry.addData("Angle Target:Current", "%5.2f:%5.0f", targetHeading, robotHeading);
         telemetry.addData("Error:Steer", "%5.1f:%5.1f", headingError, turnSpeed);
         telemetry.addData("Wheel Speeds L:R.", "%5.2f : %5.2f", leftSpeed, rightSpeed);
-        telemetry.addData("Arm Target", armTarget);
-        telemetry.addData("Arm Position", armPosition);
-        telemetry.addData("Arm Velocity", armVelocity);
         telemetry.update();
     }
 
@@ -654,51 +634,6 @@ public class AutoFTCLib extends LinearOpMode {
         robotHeading = 0;
     }
 
-    public void moveArm(ArmPosition position) {
-
-        armPosition = armMotor.getCurrentPosition();
-        switch (position) {
-            case HOME:
-                armTarget = HOME_POSITION * (int) ARM_COUNTS_PER_INCH;
-                break;
-            case LOW:
-                armTarget = (LOW_JUNCTION * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case MEDIUM:
-                armTarget = (MEDIUM_JUNCTION * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case HIGH:
-                armTarget = (HIGH_JUNCTION * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case ADJUST_UP:
-                armTarget = armPosition + (ADJUST_ARM_INCREMENT * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case ADJUST_DOWN:
-                armTarget = armPosition - (ADJUST_ARM_INCREMENT * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case CONE_HEIGHT:
-                armTarget = armPosition + CONE_HEIGHT * (int) ARM_COUNTS_PER_INCH;
-                break;
-            default:
-                armTarget = 0;
-        }
-
-        // Prevent arm moving below HOME_POSITION
-        armTarget = Math.max(armTarget, HOME_POSITION * (int) ARM_COUNTS_PER_INCH);
-        armMotor.setTargetPosition(armTarget);
-        armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-        armMotor.setVelocityPIDFCoefficients(1.09, 0.109, 0, 10.9);
-        armMotor.setPositionPIDFCoefficients(20);
-        armMotor.setTargetPositionTolerance(10);
-        armMotor.setVelocity(TPS);
-
-        while (armMotor.isBusy() && !isStopRequested()) {
-            armVelocity = armMotor.getVelocity();
-            armPosition = armMotor.getCurrentPosition();
-            sendTelemetry();
-        }
-    }
-
     /**
      * Convert power to velocity.
      * double TPS = (power/60) * COUNTS_PER_MOTOR_REV;
@@ -717,18 +652,7 @@ public class AutoFTCLib extends LinearOpMode {
 
     public void closeGripper() {
         gripperServo.turnToAngle(GRIPPER_CLOSED);
-        moveArm(ArmPosition.CONE_HEIGHT);
-    }
-
-
-    public enum ArmPosition {
-        HOME,
-        LOW,
-        MEDIUM,
-        HIGH,
-        ADJUST_UP,
-        ADJUST_DOWN,
-        CONE_HEIGHT
+        elevatorArm.moveArm(ElevatorArm.ArmPosition.CONE_HEIGHT);
     }
 
     public enum StartPosition {
