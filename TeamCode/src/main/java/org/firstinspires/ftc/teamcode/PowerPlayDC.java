@@ -18,31 +18,17 @@ import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 @TeleOp(name = "PowerPlayDCJava")
 //@Disabled
 public class PowerPlayDC extends LinearOpMode {
-    static final double ARM_DRIVE_REDUCTION = 1.75;
-    static final double ARM_WHEEL_DIAMETER_INCHES = 2.5;
-    static final double ARM_MOTOR_RPM = 300;
-    static final double ARM_COUNTS_PER_MOTOR_REV = 480;   // TorqueNADO
-    static final double ARM_COUNTS_PER_WHEEL_REV = (ARM_COUNTS_PER_MOTOR_REV * ARM_DRIVE_REDUCTION);
-    static final double ARM_COUNTS_PER_INCH = ARM_COUNTS_PER_WHEEL_REV / (ARM_WHEEL_DIAMETER_INCHES * 3.1415);
-    static final int LOW_JUNCTION = 17;
-    static final int MEDIUM_JUNCTION = 27;
-    static final int HIGH_JUNCTION = 37;
-    static final int HOME_POSITION = 0;
-    static final int CONE_HEIGHT = 5;
-    static final int ADJUST_ARM_INCREMENT = 1;
     static final double GRIPPER_MIN_ANGLE = 0;
     static final double GRIPPER_MAX_ANGLE = 180;
     // These set the open and close positions
     static final double GRIPPER_OPEN = 25;
     static final double GRIPPER_CLOSED = 73;
-    // Calculate velocity for arm movement.
-    private double TPS = ((ARM_MOTOR_RPM * .75) / 60) * ARM_COUNTS_PER_WHEEL_REV;
-
     private DcMotorEx armMotor = null;
+    private ElevatorArm elevatorArm;
     private GamepadEx gamePadArm;
     private int armTarget = 0;
     private int armPosition = 0;
-    private ArmPosition selectedPosition;
+    private ElevatorArm.ArmPosition selectedPosition;
     private double armVelocity = 0;
     private double armCurrent = 0;
     private boolean isBusy = false;
@@ -64,8 +50,8 @@ public class PowerPlayDC extends LinearOpMode {
         telemetry.update();
 
         armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
-        armMotor.setDirection(DcMotorSimple.Direction.FORWARD);
-        armMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        // elevatorArm manages the arm
+        elevatorArm = new ElevatorArm(armMotor, this);
 
         gamePadArm = new GamepadEx(gamepad2);
 
@@ -80,7 +66,7 @@ public class PowerPlayDC extends LinearOpMode {
         maxPower = 0.7;
 
         waitForStart();
-        armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        elevatorArm.resetEncoder();
         Frontleft.setDirection(DcMotorSimple.Direction.REVERSE);
         Backleft.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -120,91 +106,43 @@ public class PowerPlayDC extends LinearOpMode {
         telemetry.addData("Velocity", armVelocity);
         telemetry.addData("Current", armCurrent);
         telemetry.addData("Busy", isBusy);
-        telemetry.addData("Pos Tolerance", armMotor.getTargetPositionTolerance());
         telemetry.update();
     }
 
 
     public void ProcessArm() {
-        ArmPosition position = null;
+        ElevatorArm.ArmPosition position = null;
         // Adjust position
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.DPAD_DOWN)) {
-            position = ArmPosition.ADJUST_DOWN;
+            position = ElevatorArm.ArmPosition.ADJUST_DOWN;
         }
 
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.DPAD_UP)) {
-            position = ArmPosition.ADJUST_UP;
+            position = ElevatorArm.ArmPosition.ADJUST_UP;
         }
 
         // Low junction
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.A)) {
-            position = ArmPosition.LOW;
+            position = ElevatorArm.ArmPosition.LOW;
         }
 
         // medium junction
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.B)) {
-            position = ArmPosition.MEDIUM;
+            position = ElevatorArm.ArmPosition.MEDIUM;
         }
 
         // high junction
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.Y)) {
-            position = ArmPosition.HIGH;
+            position = ElevatorArm.ArmPosition.HIGH;
         }
 
         // ground junction
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.X)) {
-            position = ArmPosition.HOME;
+            position = ElevatorArm.ArmPosition.HOME;
         }
 
         if (position != null) {
-            moveArm(position);
-        }
-    }
-
-
-    public void moveArm(ArmPosition position) {
-        selectedPosition = position;
-        armPosition = armMotor.getCurrentPosition();
-        switch (position) {
-            case HOME:
-                armTarget = HOME_POSITION * (int) ARM_COUNTS_PER_INCH;
-                break;
-            case LOW:
-                armTarget = (LOW_JUNCTION * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case MEDIUM:
-                armTarget = (MEDIUM_JUNCTION * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case HIGH:
-                armTarget = (HIGH_JUNCTION * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case ADJUST_UP:
-                armTarget = armPosition + (ADJUST_ARM_INCREMENT * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case ADJUST_DOWN:
-                armTarget = armPosition - (ADJUST_ARM_INCREMENT * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case CONE_HEIGHT:
-                armTarget = armPosition + CONE_HEIGHT * (int) ARM_COUNTS_PER_INCH;
-                break;
-            default:
-                return;
-        }
-
-        // Prevent arm moving below HOME_POSITION
-        armTarget = Math.max(armTarget, HOME_POSITION * (int) ARM_COUNTS_PER_INCH);
-        armMotor.setTargetPosition(armTarget);
-        armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        armMotor.setVelocityPIDFCoefficients(1.09, 0.109, 0, 10.9);
-        armMotor.setPositionPIDFCoefficients(20);
-        armMotor.setTargetPositionTolerance(10);
-        armMotor.setVelocity(TPS);
-
-        while (armMotor.isBusy() && !isStopRequested()) {
-            armVelocity = armMotor.getVelocity();
-            armPosition = armMotor.getCurrentPosition();
-            armCurrent = armMotor.getCurrent(CurrentUnit.AMPS);
-            sendTelemetry("Move Arm");
+            elevatorArm.moveArm(position);
         }
     }
 
@@ -214,15 +152,5 @@ public class PowerPlayDC extends LinearOpMode {
 
     public void closeGripper() {
         GripperServo.turnToAngle(GRIPPER_CLOSED);
-    }
-
-    public enum ArmPosition {
-        HOME,
-        LOW,
-        MEDIUM,
-        HIGH,
-        ADJUST_UP,
-        ADJUST_DOWN,
-        CONE_HEIGHT
     }
 }

@@ -98,6 +98,9 @@ public class ElevatorArm {
     public int getPositionTolerance() {
         return armMotor.getTargetPositionTolerance();
     }
+    public void resetEncoder(){
+        armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    }
 
     public enum ArmPosition {
         HOME,
