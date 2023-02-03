@@ -205,6 +205,8 @@ public class AutoFTCLib extends LinearOpMode {
         }
 
         waitForStart();
+        // Assume arm is physically at it's lowest position.
+        elevatorArm.resetEncoder();
         // Save processing time, we are finished with the camera.
         camera.stopStreaming();
         camera.closeCameraDevice();
