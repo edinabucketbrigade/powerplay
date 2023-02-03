@@ -15,7 +15,7 @@ public class ElevatorArm {
         this.armMotor = armMotor;
         this.opMode = opMode;
 
-        armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        armMotor.setDirection(DcMotorSimple.Direction.FORWARD);
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
 
