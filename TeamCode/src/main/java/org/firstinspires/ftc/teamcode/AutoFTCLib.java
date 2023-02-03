@@ -60,19 +60,19 @@ public class AutoFTCLib extends LinearOpMode {
     // How close must the heading get to the target before moving to next step.
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
     static final double HEADING_THRESHOLD = .8;
-    static final double MOTOR_POSITION_COEFFICIENT = 8;
+    static final double MOTOR_POSITION_COEFFICIENT = 10;
 
     // Arm related
-    static final double ARM_DRIVE_REDUCTION = 2;
+    static final double ARM_DRIVE_REDUCTION = 1.75;
     static final double ARM_WHEEL_DIAMETER_INCHES = 2.5;
     static final double ARM_MOTOR_RPM = 300;
     static final double ARM_COUNTS_PER_MOTOR_REV = 480;   // TorqueNADO 20:1
     static final double ARM_COUNTS_PER_WHEEL_REV = (ARM_COUNTS_PER_MOTOR_REV * ARM_DRIVE_REDUCTION);
     static final double ARM_COUNTS_PER_INCH = ARM_COUNTS_PER_WHEEL_REV / (ARM_WHEEL_DIAMETER_INCHES * 3.1415);
     private double TPS = ((ARM_MOTOR_RPM * .75) / 60) * ARM_COUNTS_PER_WHEEL_REV;
-    static final int LOW_JUNCTION = 14;
-    static final int MEDIUM_JUNCTION = 24;
-    static final int HIGH_JUNCTION = 34;
+    static final int LOW_JUNCTION = 17;
+    static final int MEDIUM_JUNCTION = 27;
+    static final int HIGH_JUNCTION = 37;
     static final int HOME_POSITION = 0;
     static final int CONE_HEIGHT = 5;
     static final int ADJUST_ARM_INCREMENT = 1;
@@ -233,7 +233,7 @@ public class AutoFTCLib extends LinearOpMode {
                     closeGripper();
                     driveStraight(DRIVE_SPEED, 36, 0, 3);
                     sleep(750);
-                    pathSegment = 6;
+                    pathSegment = 7;
                     break;
                 case 2:
                     if (startPosition == StartPosition.RIGHT) {
@@ -253,13 +253,13 @@ public class AutoFTCLib extends LinearOpMode {
                         driveStraight(DRIVE_SPEED, 24, 90, 3);
                     }
                     sleep(750);
-                    pathSegment = 7;
+                    pathSegment = 4;
                     break;
                 case 4:
                     moveArm(ArmPosition.HIGH);
                     openGripper();
                     moveArm(ArmPosition.HOME);
-                    pathSegment = 6;
+                    pathSegment = 5;
                     break;
                 case 5:
                     moveArm(ArmPosition.HOME);
@@ -350,8 +350,8 @@ public class AutoFTCLib extends LinearOpMode {
 
         // Set SDK Pidf values
         setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
-        setMotorVelocityCoefficients();
-        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
+//        setMotorVelocityCoefficients();
+//        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
 
         // Set the required driving speed  (must be positive for RUN_TO_POSITION)
         // Start driving straight, and then enter the control loop
@@ -365,7 +365,7 @@ public class AutoFTCLib extends LinearOpMode {
                 (driveTimer.time() < driveTime)) {
 
             // Determine required steering to keep on heading
-            turnSpeed = getSteeringCorrection(heading, P_DRIVE_GAIN);
+//            turnSpeed = getSteeringCorrection(heading, P_DRIVE_GAIN);
 
             // if driving in reverse, the motor correction also needs to be reversed
             if (distance < 0)
@@ -503,10 +503,14 @@ public class AutoFTCLib extends LinearOpMode {
             rightSpeed /= max;
         }
 
-        backLeftDrive.setVelocity(powerToTPS(leftSpeed));
-        backRightDrive.setVelocity(powerToTPS(rightSpeed));
-        frontLeftDrive.setVelocity(powerToTPS(leftSpeed));
-        frontRightDrive.setVelocity(powerToTPS(rightSpeed));
+        backLeftDrive.setPower(leftSpeed);
+        backRightDrive.setPower(rightSpeed);
+        frontLeftDrive.setPower(leftSpeed);
+        frontRightDrive.setPower(rightSpeed);
+//        backLeftDrive.setVelocity(powerToTPS(leftSpeed));
+//        backRightDrive.setVelocity(powerToTPS(rightSpeed));
+//        frontLeftDrive.setVelocity(powerToTPS(leftSpeed));
+//        frontRightDrive.setVelocity(powerToTPS(rightSpeed));
 
 //        getVelocityFromMotors();
 //        backLeftDrive.setVelocity(simpleFeedForward.calculate(backLeftVelocity));
@@ -688,7 +692,7 @@ public class AutoFTCLib extends LinearOpMode {
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
         armMotor.setVelocityPIDFCoefficients(1.09, 0.109, 0, 10.9);
-        armMotor.setPositionPIDFCoefficients(15);
+        armMotor.setPositionPIDFCoefficients(20);
         armMotor.setTargetPositionTolerance(10);
         armMotor.setVelocity(TPS);
 
