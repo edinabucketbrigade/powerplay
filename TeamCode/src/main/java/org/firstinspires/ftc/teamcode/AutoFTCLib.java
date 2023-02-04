@@ -60,8 +60,8 @@ public class AutoFTCLib extends LinearOpMode {
     // How close must the heading get to the target before moving to next step.
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
     static final double HEADING_THRESHOLD = .8;
-    static final double MOTOR_POSITION_COEFFICIENT = 35;
-    static final int MOTOR_TARGET_POSITION_TOLERANCE = 25;
+    static final double MOTOR_POSITION_COEFFICIENT = 30;
+    static final int MOTOR_TARGET_POSITION_TOLERANCE = 20;
     private ElevatorArm elevatorArm;
     //     These set the range for the gripper servo.
     static final double GRIPPER_MIN_ANGLE = 0;
@@ -166,7 +166,7 @@ public class AutoFTCLib extends LinearOpMode {
         backRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         frontRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
+//        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
 
         //TODO: Maybe this will help. Test it.
         // simpleFeedForward = new SimpleMotorFeedforward(2, 10);
@@ -325,8 +325,14 @@ public class AutoFTCLib extends LinearOpMode {
         getCurrentPositionsFromMotors();
         backLeftTarget = backLeftPosition + moveCounts;
         backRightTarget = backRightPosition + moveCounts;
-        frontLeftTarget = backLeftTarget + moveCounts;
-        frontRightTarget = backRightTarget + moveCounts;
+        frontLeftTarget = frontLeftTarget + moveCounts;
+        frontRightTarget = frontRightTarget + moveCounts;
+
+//        telemetry.addData("backLeftTarget", backLeftTarget);
+//        telemetry.addData("backRightTarget", backRightTarget);
+//        telemetry.addData("frontLeftTarget", frontLeftTarget);
+//        telemetry.addData("frontRightTarget", frontRightTarget);
+//        telemetry.update();
 
         // Set Target FIRST, then turn on RUN_TO_POSITION
         backLeftDrive.setTargetPosition(backLeftTarget);
@@ -338,7 +344,7 @@ public class AutoFTCLib extends LinearOpMode {
         setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
 //        setMotorVelocityCoefficients();
         setMotorsPositionTolerance();
-        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
+//        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
 
         // Set the required driving speed  (must be positive for RUN_TO_POSITION)
         // Start driving straight, and then enter the control loop
@@ -348,7 +354,7 @@ public class AutoFTCLib extends LinearOpMode {
         // keep looping while we are still active, and any motors are running.
         while (opModeIsActive() &&
                 !isStopRequested() &&
-//                (backLeftDrive.isBusy() || backRightDrive.isBusy() || frontLeftDrive.isBusy() || frontRightDrive.isBusy()) &&
+                (backLeftDrive.isBusy() || backRightDrive.isBusy() || frontLeftDrive.isBusy() || frontRightDrive.isBusy()) &&
                 (driveTimer.time() < driveTime)) {
 
             // Determine required steering to keep on heading
@@ -501,7 +507,7 @@ public class AutoFTCLib extends LinearOpMode {
 //        frontLeftDrive.setVelocity(simpleFeedForward.calculate(frontLeftVelocity));
 //        frontRightDrive.setVelocity(simpleFeedForward.calculate(frontRightVelocity));
 
-        sendTelemetry();
+        //sendTelemetry();
     }
 
     /**

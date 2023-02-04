@@ -74,6 +74,7 @@ public class PowerPlayDC extends LinearOpMode {
             while (opModeIsActive() && !isStopRequested()) {
                 gamePadArm.readButtons();
                 ProcessArm();
+                sendEncoderTelemetry();
 
                 // Drive Code
                 y = -gamepad1.left_stick_y;
@@ -97,7 +98,13 @@ public class PowerPlayDC extends LinearOpMode {
         }
 
     }
-
+    public void sendEncoderTelemetry(){
+        telemetry.addData("BL",Backleft.getCurrentPosition());
+        telemetry.addData("BR",Backright.getCurrentPosition());
+        telemetry.addData("FL",Frontleft.getCurrentPosition());
+        telemetry.addData("FR",Frontright.getCurrentPosition());
+        telemetry.update();
+    }
     public void sendTelemetry(String location) {
         telemetry.addData("Called from", location);
         telemetry.addData("Selected Position", selectedPosition);
