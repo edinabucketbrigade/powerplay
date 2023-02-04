@@ -70,6 +70,7 @@ public class ElevatorArm {
 
         // Prevent arm moving below HOME_POSITION
         armTarget = Math.max(armTarget, HOME_POSITION * (int) ARM_COUNTS_PER_INCH);
+        armTarget = Math.min(armTarget, HIGH_JUNCTION * (int) ARM_COUNTS_PER_INCH);
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
         armMotor.setVelocityPIDFCoefficients(1.09, 0.109, 0, 10.9);

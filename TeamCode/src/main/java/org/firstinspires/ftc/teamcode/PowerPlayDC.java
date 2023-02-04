@@ -152,5 +152,7 @@ public class PowerPlayDC extends LinearOpMode {
 
     public void closeGripper() {
         GripperServo.turnToAngle(GRIPPER_CLOSED);
+        sleep(100);
+        elevatorArm.moveArm(ElevatorArm.ArmPosition.CONE_HEIGHT);
     }
 }
