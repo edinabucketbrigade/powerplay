@@ -60,7 +60,8 @@ public class AutoFTCLib extends LinearOpMode {
     // How close must the heading get to the target before moving to next step.
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
     static final double HEADING_THRESHOLD = .8;
-    static final double MOTOR_POSITION_COEFFICIENT = 25;
+    static final double MOTOR_POSITION_COEFFICIENT = 35;
+    static final int MOTOR_TARGET_POSITION_TOLERANCE = 25;
     private ElevatorArm elevatorArm;
     //     These set the range for the gripper servo.
     static final double GRIPPER_MIN_ANGLE = 0;
@@ -336,7 +337,8 @@ public class AutoFTCLib extends LinearOpMode {
         // Set SDK Pidf values
         setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
 //        setMotorVelocityCoefficients();
-//        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
+        setMotorsPositionTolerance();
+        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
 
         // Set the required driving speed  (must be positive for RUN_TO_POSITION)
         // Start driving straight, and then enter the control loop
@@ -603,6 +605,14 @@ public class AutoFTCLib extends LinearOpMode {
         backRightDrive.setPositionPIDFCoefficients(PositionCoefficent);
         frontLeftDrive.setPositionPIDFCoefficients(PositionCoefficent);
         frontRightDrive.setPositionPIDFCoefficients(PositionCoefficent);
+    }
+
+    public void setMotorsPositionTolerance() {
+        backLeftDrive.setTargetPositionTolerance(MOTOR_TARGET_POSITION_TOLERANCE);
+        backRightDrive.setTargetPositionTolerance(MOTOR_TARGET_POSITION_TOLERANCE);
+        frontLeftDrive.setTargetPositionTolerance(MOTOR_TARGET_POSITION_TOLERANCE);
+        frontRightDrive.setTargetPositionTolerance(MOTOR_TARGET_POSITION_TOLERANCE);
+
     }
 
     public void setMotorVelocityCoefficients() {
