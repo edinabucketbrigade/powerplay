@@ -56,11 +56,11 @@ public class AutoFTCLib extends LinearOpMode {
     // Increase these numbers if the heading does not corrects strongly enough (eg: a heavy robot or using tracks)
     // Decrease these numbers if the heading does not settle on the correct value (eg: very agile robot with omni wheels)
     static final double P_TURN_GAIN = 0.0009;     // Larger is more responsive, but also less stable
-    static final double P_DRIVE_GAIN = 0.03;     // Larger is more responsive, but also less stable
+    static final double P_DRIVE_GAIN = 0.02;     // Larger is more responsive, but also less stable
     // How close must the heading get to the target before moving to next step.
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
     static final double HEADING_THRESHOLD = .8;
-    static final double MOTOR_POSITION_COEFFICIENT = 8;
+    static final double MOTOR_POSITION_COEFFICIENT = 25;
     private ElevatorArm elevatorArm;
     //     These set the range for the gripper servo.
     static final double GRIPPER_MIN_ANGLE = 0;
@@ -218,7 +218,7 @@ public class AutoFTCLib extends LinearOpMode {
                     closeGripper();
                     driveStraight(DRIVE_SPEED, 36, 0, 3);
                     sleep(750);
-                    pathSegment = 6;
+                    pathSegment = 7;
                     break;
                 case 2:
                     if (startPosition == StartPosition.RIGHT) {
@@ -335,8 +335,8 @@ public class AutoFTCLib extends LinearOpMode {
 
         // Set SDK Pidf values
         setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
-        setMotorVelocityCoefficients();
-        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
+//        setMotorVelocityCoefficients();
+//        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
 
         // Set the required driving speed  (must be positive for RUN_TO_POSITION)
         // Start driving straight, and then enter the control loop
@@ -346,7 +346,7 @@ public class AutoFTCLib extends LinearOpMode {
         // keep looping while we are still active, and any motors are running.
         while (opModeIsActive() &&
                 !isStopRequested() &&
-                (backLeftDrive.isBusy() || backRightDrive.isBusy() || frontLeftDrive.isBusy() || frontRightDrive.isBusy()) &&
+//                (backLeftDrive.isBusy() || backRightDrive.isBusy() || frontLeftDrive.isBusy() || frontRightDrive.isBusy()) &&
                 (driveTimer.time() < driveTime)) {
 
             // Determine required steering to keep on heading
@@ -478,8 +478,8 @@ public class AutoFTCLib extends LinearOpMode {
         driveSpeed = drive;     // save this value as a class member so it can be used by telemetry.
         turnSpeed = turn;      // save this value as a class member so it can be used by telemetry.
 
-        leftSpeed = drive + turn;
-        rightSpeed = drive - turn;
+        leftSpeed = drive - turn;
+        rightSpeed = drive + turn;
 
         // Scale speeds down if either one exceeds +/- 1.0;
         double max = Math.max(Math.abs(leftSpeed), Math.abs(rightSpeed));
