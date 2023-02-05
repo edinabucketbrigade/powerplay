@@ -38,6 +38,8 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
+
 /**
  * Op mode to test ElevatorArm classs.
  */
@@ -86,7 +88,8 @@ public class ElevatorArmTester extends OpMode {
         telemetry.addData("Status", "Run Time: " + runtime.toString());
         ProcessArm();
         telemetry.addData("Arm Position", elevatorArm.getArmPosition());
-        telemetry.addData("Tolerance", elevatorArm.getPositionTolerance());
+        telemetry.addData("Position Tolerance", elevatorArm.getPositionTolerance());
+        telemetry.addData("Arm Current", armMotor.getCurrent(CurrentUnit.AMPS));
     }
 
     public void ProcessArm() {
@@ -118,6 +121,12 @@ public class ElevatorArmTester extends OpMode {
         // ground junction
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.X)) {
             position = ElevatorArm.ArmPosition.HOME;
+        }
+
+        // Reset the arm.
+        if (gamePadArm.wasJustPressed(GamepadKeys.Button.RIGHT_BUMPER)) {
+            elevatorArm.resetArmPosition();
+            return;
         }
 
         if (position != null) {

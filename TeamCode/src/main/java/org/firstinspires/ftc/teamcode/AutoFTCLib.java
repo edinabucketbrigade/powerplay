@@ -42,7 +42,7 @@ public class AutoFTCLib extends LinearOpMode {
     static final double DRIVE_SPEED = 0.4;         // Max driving speed for better distance accuracy.
     static final double TURN_SPEED = 0.4;
     // These are for GoBilda 435 motors
-    static final double MOTOR_RPM = 425;
+    static final double MOTOR_RPM = 435;
     static double COUNTS_PER_MOTOR_REV = 383.6;
 
     //TODO: These are for TorqweNado 20:1

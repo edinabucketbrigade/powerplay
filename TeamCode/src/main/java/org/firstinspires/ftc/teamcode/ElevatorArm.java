@@ -5,10 +5,15 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.hardware.TouchSensor;
+
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
 public class ElevatorArm {
-    private final DcMotorEx armMotor;
+    private DcMotorEx armMotor;
+    private DigitalChannel digitalTouch;
     OpMode opMode;
 
     public ElevatorArm(DcMotorEx armMotor, OpMode opMode) {
@@ -17,6 +22,7 @@ public class ElevatorArm {
 
         armMotor.setDirection(DcMotorSimple.Direction.FORWARD);
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        digitalTouch = opMode.hardwareMap.get(DigitalChannel.class, "touch");
     }
 
     static final double ARM_DRIVE_REDUCTION = 1.75;
@@ -36,6 +42,7 @@ public class ElevatorArm {
     private int armPosition;
     private int armTarget = 0;
     private double armVelocity = 0;
+    private double armCurrent = 0;
     private double feedForwardCalculate;
     private ElevatorFeedforward armFeedForward;
 
@@ -68,7 +75,7 @@ public class ElevatorArm {
                 armTarget = 0;
         }
 
-        // Prevent arm moving below HOME_POSITION
+        // Prevent arm moving below HOME_POSITION or above HIGH_JUNCTION
         armTarget = Math.max(armTarget, HOME_POSITION * (int) ARM_COUNTS_PER_INCH);
         armTarget = Math.min(armTarget, HIGH_JUNCTION * (int) ARM_COUNTS_PER_INCH);
         armMotor.setTargetPosition(armTarget);
@@ -81,6 +88,7 @@ public class ElevatorArm {
         while (armMotor.isBusy()) {
             armVelocity = armMotor.getVelocity();
             armPosition = armMotor.getCurrentPosition();
+            armCurrent = armMotor.getCurrent(CurrentUnit.AMPS);
         }
     }
 
@@ -88,7 +96,7 @@ public class ElevatorArm {
         return armPosition;
     }
 
-    public PIDFCoefficients getVelocityCoefficients() {
+    public PIDFCoefficients getVelocityPidfoefficients() {
         return armMotor.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
@@ -99,8 +107,39 @@ public class ElevatorArm {
     public int getPositionTolerance() {
         return armMotor.getTargetPositionTolerance();
     }
-    public void resetEncoder(){
+
+    /*
+        Get the cuurent the motor is currently using.
+     */
+    public double getArmCurrent() {
+        return armCurrent;
+    }
+
+    public void resetEncoder() {
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    }
+
+    /*
+        Move the arm down until touch sensor is triggered or current is too high (something failed).
+        That is the lowest (starting) position.
+        resetEncoder() is also called to match the defined height position values.
+     */
+    public void resetArmPosition() {
+        double CURRENT_LIMIT = 4;
+
+        // NOTE: getState() = true means NOT pressed.
+        if (digitalTouch.getState() == true) {
+            armMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            armMotor.setPower(-.2);
+            armMotor.setCurrentAlert(CURRENT_LIMIT, CurrentUnit.AMPS);
+            while (digitalTouch.getState() &&
+                    armMotor.getCurrentAlert(CurrentUnit.AMPS) < CURRENT_LIMIT) {
+            }
+
+            armMotor.setPower(0);
+        }
+
+        resetEncoder();
     }
 
     public enum ArmPosition {
