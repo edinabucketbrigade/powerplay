@@ -198,8 +198,12 @@ public class AutoFTCLib extends LinearOpMode {
         }
 
         // Adjust the camera here.
+        telemetry.speak("Adjust the camera.");
+        telemetry.update();
+
         while (!isStarted() && !isStopRequested()) {
             parkLocation = getParkLocation();
+            telemetry.addLine("Adjust the camera, then wait for the countdown.\n");
             telemetry.addData("Start Position:", startPosition);
             telemetry.addData("Park Location:", parkLocation);
             telemetry.update();
