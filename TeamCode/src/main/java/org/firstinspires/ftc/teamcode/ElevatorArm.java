@@ -131,14 +131,14 @@ public class ElevatorArm {
         if (digitalTouch.getState() == true) {
             armMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             armMotor.setPower(-.2);
-            armMotor.setCurrentAlert(CURRENT_LIMIT, CurrentUnit.AMPS);
             while (digitalTouch.getState() &&
-                    armMotor.getCurrentAlert(CurrentUnit.AMPS) < CURRENT_LIMIT) {
+                    armMotor.getCurrent(CurrentUnit.AMPS) < CURRENT_LIMIT) {
             }
 
             armMotor.setPower(0);
         }
 
+        // Set the encoder to 0 so the junction heights work.
         resetEncoder();
     }
 
