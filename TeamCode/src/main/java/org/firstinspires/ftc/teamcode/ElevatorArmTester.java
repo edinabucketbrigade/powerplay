@@ -58,6 +58,10 @@ public class ElevatorArmTester extends OpMode {
         armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
         elevatorArm = new ElevatorArm(armMotor, this);
         gamePadArm = new GamepadEx(gamepad2);
+        telemetry.addLine("Game pad keys are the same as tele.");
+        telemetry.addLine("The right bumper will reset the arm.");
+        telemetry.addLine("Ready for start.");
+        telemetry.update();
     }
 
     /*
@@ -75,7 +79,6 @@ public class ElevatorArmTester extends OpMode {
     @Override
     public void start() {
         runtime.reset();
-        elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
     }
 
     /*
@@ -89,7 +92,7 @@ public class ElevatorArmTester extends OpMode {
         ProcessArm();
         telemetry.addData("Arm Position", elevatorArm.getArmPosition());
         telemetry.addData("Position Tolerance", elevatorArm.getPositionTolerance());
-        telemetry.addData("Arm Current", armMotor.getCurrent(CurrentUnit.AMPS));
+        telemetry.addData("Arm Current (AMPS)", armMotor.getCurrent(CurrentUnit.AMPS));
     }
 
     public void ProcessArm() {
