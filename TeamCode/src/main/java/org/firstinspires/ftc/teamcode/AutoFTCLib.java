@@ -166,10 +166,6 @@ public class AutoFTCLib extends LinearOpMode {
         backRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         frontRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
-
-        //TODO: Maybe this will help. Test it.
-        // simpleFeedForward = new SimpleMotorFeedforward(2, 10);
 
         gripperServo = new SimpleServo(hardwareMap, "GripperServo", GRIPPER_MIN_ANGLE, GRIPPER_MAX_ANGLE);
         openGripper();
@@ -346,9 +342,9 @@ public class AutoFTCLib extends LinearOpMode {
 
         // Set SDK Pidf values
         setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
+//        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
 //        setMotorVelocityCoefficients();
         setMotorsPositionTolerance();
-//        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
 
         // Set the required driving speed  (must be positive for RUN_TO_POSITION)
         // Start driving straight, and then enter the control loop
@@ -391,7 +387,6 @@ public class AutoFTCLib extends LinearOpMode {
 
         setMotorsMode(DcMotor.RunMode.RUN_USING_ENCODER);
         setMotorVelocityCoefficients();
-        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
 
         // Run getSteeringCorrection() once to pre-calculate the current error
         getSteeringCorrection(heading, P_DRIVE_GAIN);
@@ -549,6 +544,8 @@ public class AutoFTCLib extends LinearOpMode {
         frontRightDrive.setTargetPosition(frontRightTarget);
 
         setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
+//        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
+//        setMotorVelocityCoefficients();
 
         while (opModeIsActive() &&
                 !isStopRequested() &&
