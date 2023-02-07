@@ -52,6 +52,8 @@ public class PowerPlayDC extends LinearOpMode {
         armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
         // elevatorArm manages the arm
         elevatorArm = new ElevatorArm(armMotor, this);
+//TODO: Enable this line after testing.
+//        elevatorArm.resetArmPosition();
 
         gamePadArm = new GamepadEx(gamepad2);
 
