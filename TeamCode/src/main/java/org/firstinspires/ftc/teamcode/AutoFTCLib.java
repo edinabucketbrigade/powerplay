@@ -70,22 +70,28 @@ public class AutoFTCLib extends LinearOpMode {
     static final double GRIPPER_OPEN = 25;
     static final double GRIPPER_CLOSED = 73;
     static final double MAX_POWER = 0.4;
+    // Strategy variables
+    // Path state
     private int pathSegment;
+    // Where do we start
     private StartPosition startPosition = StartPosition.NONE;
-    private int STRAFE_TIMEOUT = 3;     //Time to wait for strafing to finish.
+    // Signal zone parking location
+    private SleeveDetection.ParkingPosition parkLocation;
+    // The junction to score a cone
+    private ScoreJunction scoreJunction = ScoreJunction.NONE;
+    // Delay before starting autonomous
+    private int startDelaySeconds = 0;
     private SleeveDetection sleeveDetection;
+    private int STRAFE_TIMEOUT = 3;     //Time to wait for strafing to finish.
     private OpenCvWebcam camera;
     private IMU imu;
     private GamepadEx gamePadDrive;
     private String WEB_CAM_NAME = "Webcam 1";
-    private SleeveDetection.ParkingPosition parkLocation;
     private DcMotorEx backLeftDrive;
     private DcMotorEx backRightDrive;
     private DcMotorEx frontLeftDrive;
     private DcMotorEx frontRightDrive;
     private DcMotorEx armMotor = null;
-    //TODO: Test this to see if it adds anything
-    //    private SimpleMotorFeedforward simpleFeedForward;
     private SimpleServo gripperServo;
     private int backLeftTarget = 0;
     private int backRightTarget = 0;
@@ -168,9 +174,11 @@ public class AutoFTCLib extends LinearOpMode {
         setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         gripperServo = new SimpleServo(hardwareMap, "GripperServo", GRIPPER_MIN_ANGLE, GRIPPER_MAX_ANGLE);
+//TODO: Enable this line after testing.
+//        elevatorArm.resetArmPosition();
         openGripper();
 
-        // Choose your start position.
+        // Choose your start position, junction to score and any delay.
         while (!isStarted() &&
                 !gamePadDrive.wasJustPressed(GamepadKeys.Button.START) &&
                 !isStopRequested()) {
@@ -187,9 +195,44 @@ public class AutoFTCLib extends LinearOpMode {
                 telemetry.update();
             }
 
-            telemetry.addLine("Select start position");
-            telemetry.addLine("X=Left, B=Right, Start=Adjust Camera");
-            telemetry.addData("Position:", startPosition);
+            if (gamePadDrive.wasJustPressed(GamepadKeys.Button.DPAD_UP)) {
+                scoreJunction = scoreJunction.getNext();
+                switch (scoreJunction) {
+                    case LOW:
+                        telemetry.speak("Low");
+                        break;
+                    case MEDIUM:
+                        telemetry.speak("Medium");
+                        break;
+                    case HIGH:
+                        telemetry.speak("High");
+                        break;
+                    case NONE:
+                        telemetry.speak("None");
+                        break;
+                }
+            }
+
+            if (gamePadDrive.wasJustPressed(GamepadKeys.Button.LEFT_BUMPER)) {
+                startDelaySeconds -= 1;
+                // Wrap to +15 (a reasonable upper limit?)
+                startDelaySeconds = startDelaySeconds < 0 ? 15 : startDelaySeconds;
+            }
+
+            if (gamePadDrive.wasJustPressed(GamepadKeys.Button.RIGHT_BUMPER)) {
+                startDelaySeconds += 1;
+                // Wrap back to 0 when you hit 15
+                startDelaySeconds = startDelaySeconds > 15 ? 0 : startDelaySeconds;
+            }
+
+            telemetry.addLine("Select Start Options");
+            telemetry.addLine("X=Start Left, B=Start Right");
+            telemetry.addLine("Dpad Up to toggle cone junction");
+            telemetry.addLine("Bumper left/right to select delay");
+            telemetry.addLine("Press Start to Adjust Camera\n");
+            telemetry.addData("Position", startPosition);
+            telemetry.addData("Junction", scoreJunction);
+            telemetry.addData("Delay", startDelaySeconds);
             telemetry.update();
         }
 
@@ -678,5 +721,17 @@ public class AutoFTCLib extends LinearOpMode {
         RIGHT,
         LEFT,
         NONE
+    }
+
+    // Which junction to score cone (assume only 1 cone)
+    public enum ScoreJunction {
+        LOW,
+        MEDIUM,
+        HIGH,
+        NONE;
+
+        public ScoreJunction getNext() {
+            return values()[(ordinal() + 1) % values().length];
+        }
     }
 }
