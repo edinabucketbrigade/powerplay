@@ -40,7 +40,7 @@ public class PowerPlayDC extends LinearOpMode {
 //Whole Code Notes: Look at block code for denominator info.
 
     public void runOpMode() {
-        double maxPower;
+        double maxPower = .7;
         double y;
         double x;
         double rx;
@@ -63,9 +63,6 @@ public class PowerPlayDC extends LinearOpMode {
         Backright = hardwareMap.get(DcMotor.class, "Backright");
         GripperServo = new SimpleServo(hardwareMap, "GripperServo",
                 GRIPPER_MIN_ANGLE, GRIPPER_MAX_ANGLE);
-        GripperServo.setInverted(true);
-
-        maxPower = 0.7;
 
         waitForStart();
         elevatorArm.resetEncoder();
@@ -89,7 +86,6 @@ public class PowerPlayDC extends LinearOpMode {
                 Frontright.setPower((((y - x) - rx) / denominator) * maxPower);
                 Backright.setPower((((y + x) - rx) / denominator) * maxPower);
 
-                //} This is commented out on purpose.
                 if (gamePadArm.getButton(GamepadKeys.Button.RIGHT_BUMPER)) {
                     openGripper();
                 }
@@ -98,8 +94,8 @@ public class PowerPlayDC extends LinearOpMode {
                 }
             }
         }
-
     }
+
     public void sendEncoderTelemetry(){
         telemetry.addData("BL",Backleft.getCurrentPosition());
         telemetry.addData("BR",Backright.getCurrentPosition());

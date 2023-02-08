@@ -579,9 +579,9 @@ public class AutoFTCLib extends LinearOpMode {
         while (opModeIsActive() &&
                 !isStopRequested() &&
                 backLeftDrive.isBusy() &&
-                        backRightDrive.isBusy() &&
-                        frontLeftDrive.isBusy() &&
-                        frontRightDrive.isBusy()) {
+                backRightDrive.isBusy() &&
+                frontLeftDrive.isBusy() &&
+                frontRightDrive.isBusy()) {
             sendTelemetry();
             idle();
         }
@@ -702,6 +702,7 @@ public class AutoFTCLib extends LinearOpMode {
 
     public void closeGripper() {
         gripperServo.turnToAngle(GRIPPER_CLOSED);
+        sleep(100);
         elevatorArm.moveArm(ElevatorArm.ArmPosition.CONE_HEIGHT);
     }
 
