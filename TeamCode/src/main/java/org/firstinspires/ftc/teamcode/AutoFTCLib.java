@@ -119,13 +119,6 @@ public class AutoFTCLib extends LinearOpMode {
      */
     @Override
     public void runOpMode() {
-        // Bulk reads
-        List<LynxModule> allHubs = hardwareMap.getAll(LynxModule.class);
-        // Important: Set all Expansion hubs to use the AUTO Bulk Caching mode
-        for (LynxModule module : allHubs) {
-            module.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
-        }
-
         imu = hardwareMap.get(IMU.class, "imu");
         RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
         RevHubOrientationOnRobot.UsbFacingDirection usbDirection = RevHubOrientationOnRobot.UsbFacingDirection.UP;
@@ -258,7 +251,7 @@ public class AutoFTCLib extends LinearOpMode {
             switch (pathSegment) {
                 case 1:
                     closeGripper();
-                    driveStraight(DRIVE_SPEED, 34, 0, 3);
+                    driveStraight(DRIVE_SPEED, 30, 0, 3);
                     sleep(750);
                     pathSegment = 2;
                     break;
@@ -266,34 +259,21 @@ public class AutoFTCLib extends LinearOpMode {
                     // Direction to junction
                     switch (startPosition) {
                         case LEFT:
-                            strafeRobot(DRIVE_SPEED, .5, 270, STRAFE_TIMEOUT);
+                            strafeRobot(DRIVE_SPEED, 12, 270, STRAFE_TIMEOUT);
                             break;
                         case RIGHT:
-                            strafeRobot(DRIVE_SPEED, .5, 90, STRAFE_TIMEOUT);
-                            break;
-                    }
-                    pathSegment = 7;
-                    break;
-                case 3:
-                    // Where did the camera tell us to park?
-                    switch (startPosition) {
-                        case LEFT:
                             strafeRobot(DRIVE_SPEED, 12, 90, STRAFE_TIMEOUT);
                             break;
-                        case RIGHT:
-                            strafeRobot(DRIVE_SPEED, 12, 2701, STRAFE_TIMEOUT);
-                            break;
                     }
-                    sleep(750);
-                    pathSegment = 4;
+                    pathSegment = 6;
                     break;
-                case 4:
+                case 3:
                     elevatorArm.moveArm(ElevatorArm.ArmPosition.MEDIUM);
                     openGripper();
                     elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
                     pathSegment = 5;
                     break;
-                case 5:
+                case 4:
 //                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
 //                    sleep(500);
 //                    if (startPosition == StartPosition.RIGHT) {
@@ -304,9 +284,9 @@ public class AutoFTCLib extends LinearOpMode {
 //                    }
 //                    sleep(750);
 //                    driveStraight(DRIVE_SPEED, -60, 0, 3);
-                    pathSegment = 6;
+                    pathSegment = 5;
                     break;
-                case 6:
+                case 5:
                     // Where did the camera tell us to park?
                     switch (parkLocation) {
                         case LEFT:
@@ -318,9 +298,9 @@ public class AutoFTCLib extends LinearOpMode {
                             strafeRobot(DRIVE_SPEED, 24, 90, STRAFE_TIMEOUT);
                             break;
                     }
-                    pathSegment = 7;
+                    pathSegment = 6;
                     break;
-                case 7:
+                case 6:
                     telemetry.addData("Status", "Path complete.");
                     telemetry.update();
                     break;
@@ -568,9 +548,7 @@ public class AutoFTCLib extends LinearOpMode {
         strafeTimer.reset();
         setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         targetHeading = heading;
-//        int moveCounts = (int) ((distance * COUNTS_PER_INCH) * .05);
-        int moveCounts = 0;
-        getCurrentPositionsFromMotors();
+        int moveCounts = (int) ((distance * COUNTS_PER_INCH));
         backLeftTarget = backLeftPosition + moveCounts;
         backRightTarget = backRightPosition + moveCounts;
         frontLeftTarget = frontLeftPosition + moveCounts;
@@ -604,18 +582,14 @@ public class AutoFTCLib extends LinearOpMode {
                         backRightDrive.isBusy() &&
                         frontLeftDrive.isBusy() &&
                         frontRightDrive.isBusy()) {
-//            backLeftDrive.setVelocity(powerToTPS(strafeSpeed));
-//            backRightDrive.setVelocity(powerToTPS(strafeSpeed));
-//            frontLeftDrive.setVelocity(powerToTPS(strafeSpeed));
-//            frontRightDrive.setVelocity(powerToTPS(strafeSpeed));
             sendTelemetry();
             idle();
         }
 
         stopAllMotors();
-        while (opModeIsActive() &&
-                !isStopRequested())
-            sendTelemetry();
+//        while (opModeIsActive() &&
+//                !isStopRequested())
+//            sendTelemetry();
 
     }
 
