@@ -155,6 +155,7 @@ public class AutoFTCLib extends LinearOpMode {
         gamePadDrive = new GamepadEx(gamepad1);
 
         armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
+        armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         // Arm functions are handled by elevatorArm
         elevatorArm = new ElevatorArm(armMotor, this);
 
@@ -203,9 +204,6 @@ public class AutoFTCLib extends LinearOpMode {
                         break;
                     case MEDIUM:
                         telemetry.speak("Medium");
-                        break;
-                    case HIGH:
-                        telemetry.speak("High");
                         break;
                     case NONE:
                         telemetry.speak("None");
@@ -260,47 +258,52 @@ public class AutoFTCLib extends LinearOpMode {
             switch (pathSegment) {
                 case 1:
                     closeGripper();
-                    driveStraight(DRIVE_SPEED, 36, 0, 3);
+                    driveStraight(DRIVE_SPEED, 34, 0, 3);
                     sleep(750);
-                    pathSegment = 7;
+                    pathSegment = 2;
                     break;
                 case 2:
-                    if (startPosition == StartPosition.RIGHT) {
-                        turnToHeading(TURN_SPEED, -90, 3);
+                    // Direction to junction
+                    switch (startPosition) {
+                        case LEFT:
+                            strafeRobot(DRIVE_SPEED, .5, 270, STRAFE_TIMEOUT);
+                            break;
+                        case RIGHT:
+                            strafeRobot(DRIVE_SPEED, .5, 90, STRAFE_TIMEOUT);
+                            break;
                     }
-                    if (startPosition == StartPosition.LEFT) {
-                        turnToHeading(TURN_SPEED, 90, 3);
-                    }
-                    sleep(750);
-                    pathSegment = 3;
-                    break;
-                case 3:
-                    if (startPosition == StartPosition.RIGHT) {
-                        driveStraight(DRIVE_SPEED, 24, -90, 3);
-                    }
-                    if (startPosition == StartPosition.LEFT) {
-                        driveStraight(DRIVE_SPEED, 24, 90, 3);
-                    }
-                    sleep(750);
                     pathSegment = 7;
                     break;
-                case 4:
-                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HIGH);
-                    openGripper();
-                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
-                    pathSegment = 6;
-                    break;
-                case 5:
-                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
-                    sleep(500);
-                    if (startPosition == StartPosition.RIGHT) {
-                        turnToHeading(TURN_SPEED, 90, 3);
-                    }
-                    if (startPosition == StartPosition.LEFT) {
-                        turnToHeading(TURN_SPEED, -90, 3);
+                case 3:
+                    // Where did the camera tell us to park?
+                    switch (startPosition) {
+                        case LEFT:
+                            strafeRobot(DRIVE_SPEED, 12, 90, STRAFE_TIMEOUT);
+                            break;
+                        case RIGHT:
+                            strafeRobot(DRIVE_SPEED, 12, 2701, STRAFE_TIMEOUT);
+                            break;
                     }
                     sleep(750);
-                    driveStraight(DRIVE_SPEED, -60, 0, 3);
+                    pathSegment = 4;
+                    break;
+                case 4:
+                    elevatorArm.moveArm(ElevatorArm.ArmPosition.MEDIUM);
+                    openGripper();
+                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
+                    pathSegment = 5;
+                    break;
+                case 5:
+//                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
+//                    sleep(500);
+//                    if (startPosition == StartPosition.RIGHT) {
+//                        turnToHeading(TURN_SPEED, 90, 3);
+//                    }
+//                    if (startPosition == StartPosition.LEFT) {
+//                        turnToHeading(TURN_SPEED, -90, 3);
+//                    }
+//                    sleep(750);
+//                    driveStraight(DRIVE_SPEED, -60, 0, 3);
                     pathSegment = 6;
                     break;
                 case 6:
@@ -565,7 +568,8 @@ public class AutoFTCLib extends LinearOpMode {
         strafeTimer.reset();
         setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         targetHeading = heading;
-        int moveCounts = (int) (distance * COUNTS_PER_INCH);
+//        int moveCounts = (int) ((distance * COUNTS_PER_INCH) * .05);
+        int moveCounts = 0;
         getCurrentPositionsFromMotors();
         backLeftTarget = backLeftPosition + moveCounts;
         backRightTarget = backRightPosition + moveCounts;
@@ -588,21 +592,31 @@ public class AutoFTCLib extends LinearOpMode {
 
         setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
 //        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
-//        setMotorVelocityCoefficients();
+//        setMotorsPositionTolerance();
+        backLeftDrive.setVelocity(powerToTPS(strafeSpeed));
+        backRightDrive.setVelocity(powerToTPS(strafeSpeed));
+        frontLeftDrive.setVelocity(powerToTPS(strafeSpeed));
+        frontRightDrive.setVelocity(powerToTPS(strafeSpeed));
 
         while (opModeIsActive() &&
                 !isStopRequested() &&
-                (backLeftDrive.isBusy() &&
+                backLeftDrive.isBusy() &&
                         backRightDrive.isBusy() &&
                         frontLeftDrive.isBusy() &&
-                        frontRightDrive.isBusy()) &&
-                (strafeTimer.seconds() < strafeTime)) {
-            backLeftDrive.setPower(strafeSpeed);
-            backRightDrive.setPower(strafeSpeed);
-            frontLeftDrive.setPower(strafeSpeed);
-            frontRightDrive.setPower(strafeSpeed);
+                        frontRightDrive.isBusy()) {
+//            backLeftDrive.setVelocity(powerToTPS(strafeSpeed));
+//            backRightDrive.setVelocity(powerToTPS(strafeSpeed));
+//            frontLeftDrive.setVelocity(powerToTPS(strafeSpeed));
+//            frontRightDrive.setVelocity(powerToTPS(strafeSpeed));
             sendTelemetry();
+            idle();
         }
+
+        stopAllMotors();
+        while (opModeIsActive() &&
+                !isStopRequested())
+            sendTelemetry();
+
     }
 
     /**
@@ -727,7 +741,6 @@ public class AutoFTCLib extends LinearOpMode {
     public enum ScoreJunction {
         LOW,
         MEDIUM,
-        HIGH,
         NONE;
 
         public ScoreJunction getNext() {

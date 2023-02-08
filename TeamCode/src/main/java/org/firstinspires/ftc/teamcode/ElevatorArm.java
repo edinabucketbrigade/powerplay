@@ -131,8 +131,9 @@ public class ElevatorArm {
         if (digitalTouch.getState() == true) {
             armMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             armMotor.setPower(-.2);
-            while (digitalTouch.getState() &&
-                    armMotor.getCurrent(CurrentUnit.AMPS) < CURRENT_LIMIT) {
+            while (digitalTouch.getState()) {
+//            &&
+//                    armMotor.getCurrent(CurrentUnit.AMPS) < CURRENT_LIMIT) {
             }
 
             armMotor.setPower(0);
