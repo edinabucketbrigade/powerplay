@@ -20,7 +20,7 @@ public class ElevatorArm {
         this.armMotor = armMotor;
         this.opMode = opMode;
 
-        armMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+        armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         digitalTouch = opMode.hardwareMap.get(DigitalChannel.class, "touch");
     }
@@ -125,15 +125,14 @@ public class ElevatorArm {
         resetEncoder() is also called to match the defined height position values.
      */
     public void resetArmPosition() {
-        double CURRENT_LIMIT = 4;
+        double CURRENT_LIMIT = 3;
 
         // NOTE: getState() = true means NOT pressed.
         if (digitalTouch.getState() == true) {
             armMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             armMotor.setPower(-.2);
-            while (digitalTouch.getState()) {
-//            &&
-//                    armMotor.getCurrent(CurrentUnit.AMPS) < CURRENT_LIMIT) {
+            while (digitalTouch.getState() &&
+                    armMotor.getCurrent(CurrentUnit.AMPS) < CURRENT_LIMIT) {
             }
 
             armMotor.setPower(0);
