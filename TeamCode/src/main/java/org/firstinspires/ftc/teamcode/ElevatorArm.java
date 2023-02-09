@@ -7,7 +7,6 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
-import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
@@ -132,7 +131,7 @@ public class ElevatorArm {
         double CURRENT_LIMIT = 3;
 
         // NOTE: getState() = true means NOT pressed.
-        if (digitalTouch.getState() == true) {
+        if (digitalTouch.getState()) {
             armMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             armMotor.setPower(-.2);
             while (digitalTouch.getState() &&
