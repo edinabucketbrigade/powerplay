@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
+import com.sun.tools.javac.code.Attribute;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -23,6 +24,9 @@ import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvWebcam;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 
 @Autonomous(name = "State Auto", group = "FtcLib")
 //@Autonomous(name = "State Auto", group = "FtcLib", preselectTeleOp = "PowerPlayDc")
@@ -41,7 +45,7 @@ public class AutoFTCLib extends LinearOpMode {
     static final double MOTOR_RPM = 435;
     static double COUNTS_PER_MOTOR_REV = 383.6;
 
-    //TODO: These are for TorqweNado 20:1
+    //TODO: These are for TorqweNado 20:1. Use for robot with these motors on drive train
     //    static final double MOTOR_RPM = 300;
     //    static double COUNTS_PER_MOTOR_REV = 480;
     static double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
@@ -79,6 +83,8 @@ public class AutoFTCLib extends LinearOpMode {
     private int startDelaySeconds = 0;
     private SleeveDetection sleeveDetection;
     private int STRAFE_TIMEOUT = 3;     //Time to wait for strafing to finish.
+    // Adjust this for fine tuning drive and strafe distnaces
+    private double TILE_SIZE = 24;
     private OpenCvWebcam camera;
     private IMU imu;
     private GamepadEx gamePadDrive;
@@ -164,7 +170,7 @@ public class AutoFTCLib extends LinearOpMode {
         setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         gripperServo = new SimpleServo(hardwareMap, "GripperServo", GRIPPER_MIN_ANGLE, GRIPPER_MAX_ANGLE);
-//TODO: Enable this line after testing.
+//TODO: Enable this line after testing resetArmPosition().
 //        elevatorArm.resetArmPosition();
         openGripper();
 
@@ -198,6 +204,7 @@ public class AutoFTCLib extends LinearOpMode {
                         telemetry.speak("None");
                         break;
                 }
+                telemetry.update();
             }
 
             if (gamePadDrive.wasJustPressed(GamepadKeys.Button.LEFT_BUMPER)) {
@@ -236,6 +243,14 @@ public class AutoFTCLib extends LinearOpMode {
         }
 
         waitForStart();
+        // Pause, if selected by driver.
+        if (startDelaySeconds > 0) {
+            resetRuntime();
+            while (getRuntime() < startDelaySeconds) {
+                telemetry.addData("Start Delay", getRuntime());
+                telemetry.update();
+            }
+        }
         // Assume arm is physically at it's lowest position.
         elevatorArm.resetEncoder();
         // Save processing time, we are finished with the camera.
@@ -247,53 +262,37 @@ public class AutoFTCLib extends LinearOpMode {
             switch (pathSegment) {
                 case 1:
                     closeGripper();
-                    driveStraight(DRIVE_SPEED, 30, 0, 3);
+                    driveStraight(DRIVE_SPEED, TILE_SIZE * 1.25, 0, 3);
                     sleep(750);
-                    pathSegment = 2;
+                    pathSegment = scoreJunction == ScoreJunction.MEDIUM ? 2 : 4;
                     break;
                 case 2:
                     // Direction to junction
                     switch (startPosition) {
                         case LEFT:
-                            strafeRobot(DRIVE_SPEED, 12, 270, STRAFE_TIMEOUT);
+                            strafeRobot(DRIVE_SPEED, TILE_SIZE * .5, 270, STRAFE_TIMEOUT);
                             break;
                         case RIGHT:
-                            strafeRobot(DRIVE_SPEED, 12, 90, STRAFE_TIMEOUT);
+                            strafeRobot(DRIVE_SPEED, TILE_SIZE * .5, 90, STRAFE_TIMEOUT);
                             break;
                     }
-                    pathSegment = 6;
+                    sleep(750);
+                    //TODO: move closer to the junction?
+                    pathSegment = 3;
                     break;
                 case 3:
+                    // Score the cone
                     elevatorArm.moveArm(ElevatorArm.ArmPosition.MEDIUM);
                     openGripper();
                     elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
-                    pathSegment = 5;
+                    sleep(750);
+                    //TODO: re-position to center of tile
+                    pathSegment = 4;
                     break;
                 case 4:
-//                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
-//                    sleep(500);
-//                    if (startPosition == StartPosition.RIGHT) {
-//                        turnToHeading(TURN_SPEED, 90, 3);
-//                    }
-//                    if (startPosition == StartPosition.LEFT) {
-//                        turnToHeading(TURN_SPEED, -90, 3);
-//                    }
-//                    sleep(750);
-//                    driveStraight(DRIVE_SPEED, -60, 0, 3);
-                    pathSegment = 5;
-                    break;
-                case 5:
                     // Where did the camera tell us to park?
-                    switch (parkLocation) {
-                        case LEFT:
-                            strafeRobot(DRIVE_SPEED, 24, 270, STRAFE_TIMEOUT);
-                            break;
-                        case CENTER:
-                            break;
-                        case RIGHT:
-                            strafeRobot(DRIVE_SPEED, 24, 90, STRAFE_TIMEOUT);
-                            break;
-                    }
+                    double[] signalZonePath = getSignalZonePath();
+                    strafeRobot(DRIVE_SPEED, signalZonePath[1], signalZonePath[0], STRAFE_TIMEOUT);
                     pathSegment = 6;
                     break;
                 case 6:
@@ -528,7 +527,7 @@ public class AutoFTCLib extends LinearOpMode {
 //        frontLeftDrive.setVelocity(simpleFeedForward.calculate(frontLeftVelocity));
 //        frontRightDrive.setVelocity(simpleFeedForward.calculate(frontRightVelocity));
 
-        //sendTelemetry();
+        sendTelemetry();
     }
 
     /**
@@ -690,6 +689,70 @@ public class AutoFTCLib extends LinearOpMode {
      */
     private double powerToTPS(double power) {
         return ((power * MOTOR_RPM) / 60) * COUNTS_PER_MOTOR_REV;
+    }
+
+    /**
+     * Get the distance and direction parameters for strafeRobot()
+     * to park in the correct signal zone.
+     *
+     * @return double[] - [0] os the direction, [1] is the distance
+     */
+    public double[] getSignalZonePath() {
+        double[] result;
+        double direction = 0;
+        double distance = 0;
+        // No junction, robot is on the signal sleeve tape mark
+        if (scoreJunction == ScoreJunction.NONE) {
+            switch (parkLocation) {
+                case LEFT:
+                    direction = 270;
+                    distance = TILE_SIZE;
+                    break;
+                case CENTER:
+                    direction = 0;
+                    distance = 0;
+                    break;
+                case RIGHT:
+                    direction = 90;
+                    distance = TILE_SIZE;
+                    break;
+            }
+        }
+        // Scoring medium junction, robot is centered on the tile in front of the medium junction
+        if (scoreJunction == ScoreJunction.MEDIUM) {
+            switch (startPosition) {
+                case LEFT:
+                    direction = 270;
+                    switch (parkLocation) {
+                        case LEFT:
+                            distance = TILE_SIZE * 2.5;
+                            break;
+                        case CENTER:
+                            distance = TILE_SIZE * 1.5;
+                            break;
+                        case RIGHT:
+                            distance = TILE_SIZE * .5;
+                            break;
+                    }
+                    break;
+                case RIGHT:
+                    direction = 90;
+                    switch (parkLocation) {
+                        case LEFT:
+                            distance = TILE_SIZE * .5;
+                            break;
+                        case CENTER:
+                            distance = TILE_SIZE * 1.5;
+                            break;
+                        case RIGHT:
+                            distance = TILE_SIZE * 2.5;
+                            break;
+                    }
+                    break;
+            }
+        }
+        result = new double[]{direction, distance};
+        return result;
     }
 
     public void openGripper() {
