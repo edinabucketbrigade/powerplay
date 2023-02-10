@@ -275,7 +275,9 @@ public class AutoFTCLib extends LinearOpMode {
                     pathSegment = 6;
                     break;
                 case 3:
-                    // Score the cone
+                    //TODO: Score the cone pathSegments 3 & 4 score the cone.
+                    // This should be moved to step 1.
+                    // Currently incomplete 2/12/2023!
                     elevatorArm.moveArm(ElevatorArm.ArmPosition.MEDIUM);
                     openGripper();
                     elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
@@ -540,6 +542,7 @@ public class AutoFTCLib extends LinearOpMode {
         setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         targetHeading = heading;
         int moveCounts = (int) ((distance * COUNTS_PER_INCH));
+        getCurrentPositionsFromMotors();
         backLeftTarget = backLeftPosition + moveCounts;
         backRightTarget = backRightPosition + moveCounts;
         frontLeftTarget = frontLeftPosition + moveCounts;
