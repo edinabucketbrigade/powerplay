@@ -255,43 +255,53 @@ public class AutoFTCLib extends LinearOpMode {
         while (opModeIsActive() && !isStopRequested()) {
             switch (pathSegment) {
                 case 1:
+                    // Always start by driving forward to signal zone tape.
                     closeGripper();
                     driveStraight(DRIVE_SPEED, TILE_SIZE * 1.25, 0, 3);
-                    sleep(750);
-                    pathSegment = scoreJunction == ScoreJunction.MEDIUM ? 2 : 4;
+                    sleep(500);
+                    // Scoring junction?
+                    pathSegment = scoreJunction == ScoreJunction.MEDIUM ? 2 : 3;
                     break;
                 case 2:
-                    // Park in signal zone
+                    // Score a junction
+                    // Strafe from signal zone tape
                     switch (startPosition) {
                         case LEFT:
-                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.4), 270, STRAFE_TIMEOUT);
+                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.5), 90, STRAFE_TIMEOUT);
                             break;
                         case RIGHT:
-                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.4), 90, STRAFE_TIMEOUT);
+                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.4), 270, STRAFE_TIMEOUT);
                             break;
                     }
-                    sleep(750);
-                    //TODO: move closer to the junction?
-                    pathSegment = 6;
+
+                    sleep(500);
+                    // Move close to junction
+                    driveStraight(DRIVE_SPEED, 3, 0, 2);
+                    sleep(500);
+                    // Raise the arm
+                    elevatorArm.moveArm(ElevatorArm.ArmPosition.MEDIUM);
+                    sleep(250);
+                    // Open gripper
+                    openGripper();
+                    sleep(250);
+                    // Lower arm
+                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
+                    sleep(500);
+                    // Move back to center of tile.
+                    driveStraight(DRIVE_SPEED, -3, 0, 2);
+                    sleep(250);
+                    // Go park
+                    pathSegment = 3;
                     break;
                 case 3:
-                    //TODO: Score the cone pathSegments 3 & 4 score the cone.
-                    // This should be moved to step 1.
-                    // Currently incomplete 2/12/2023!
-                    elevatorArm.moveArm(ElevatorArm.ArmPosition.MEDIUM);
-                    openGripper();
-                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
-                    sleep(750);
-                    //TODO: re-position to center of tile
-                    pathSegment = 4;
-                    break;
-                case 4:
                     // Where did the camera tell us to park?
                     double[] signalZonePath = getSignalZonePath();
                     strafeRobot(DRIVE_SPEED, signalZonePath[1], signalZonePath[0], STRAFE_TIMEOUT);
-                    pathSegment = 6;
+                    sleep(250);
+                    pathSegment = 4;
                     break;
-                case 6:
+                case 4:
+                    // make sure arm is down for tele.
                     elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
                     sleep(500);
                     telemetry.addData("Status", "Path complete.");
@@ -705,7 +715,7 @@ public class AutoFTCLib extends LinearOpMode {
             switch (parkLocation) {
                 case LEFT:
                     direction = 270;
-                    distance = TILE_SIZE;
+                    distance = TILE_SIZE * 1.4;
                     break;
                 case CENTER:
                     direction = 0;
@@ -713,7 +723,7 @@ public class AutoFTCLib extends LinearOpMode {
                     break;
                 case RIGHT:
                     direction = 90;
-                    distance = TILE_SIZE;
+                    distance = TILE_SIZE * 1.4;
                     break;
             }
         }
