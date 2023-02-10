@@ -24,8 +24,8 @@ import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvWebcam;
 
-@Autonomous(name = "State Auto", group = "FtcLib")
-//@Autonomous(name = "State Auto", group = "FtcLib", preselectTeleOp = "PowerPlayDc")
+//@Autonomous(name = "State Auto", group = "FtcLib")
+@Autonomous(name = "State Auto", group = "FtcLib", preselectTeleOp = "PowerPlayDCJava")
 public class AutoFTCLib extends LinearOpMode {
     // Calculate the COUNTS_PER_INCH for your specific drive train.
     // Go to your motor vendor website to determine your motor's COUNTS_PER_MOTOR_REV
@@ -80,7 +80,7 @@ public class AutoFTCLib extends LinearOpMode {
     private SleeveDetection sleeveDetection;
     private int STRAFE_TIMEOUT = 3;     //Time to wait for strafing to finish.
     // Adjust this for fine tuning drive and strafe distnaces
-    private double TILE_SIZE = 24;
+    private double TILE_SIZE = 30;
     private OpenCvWebcam camera;
     private IMU imu;
     private GamepadEx gamePadDrive;
@@ -251,7 +251,7 @@ public class AutoFTCLib extends LinearOpMode {
         camera.stopStreaming();
         camera.closeCameraDevice();
 
-        pathSegment = 1;
+        pathSegment = 2;
         while (opModeIsActive() && !isStopRequested()) {
             switch (pathSegment) {
                 case 1:
@@ -261,18 +261,18 @@ public class AutoFTCLib extends LinearOpMode {
                     pathSegment = scoreJunction == ScoreJunction.MEDIUM ? 2 : 4;
                     break;
                 case 2:
-                    // Direction to junction
+                    // Park in signal zone
                     switch (startPosition) {
                         case LEFT:
-                            strafeRobot(DRIVE_SPEED, TILE_SIZE * .5, 270, STRAFE_TIMEOUT);
+                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.5), 270, STRAFE_TIMEOUT);
                             break;
                         case RIGHT:
-                            strafeRobot(DRIVE_SPEED, TILE_SIZE * .5, 90, STRAFE_TIMEOUT);
+                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.5), 90, STRAFE_TIMEOUT);
                             break;
                     }
                     sleep(750);
                     //TODO: move closer to the junction?
-                    pathSegment = 3;
+                    pathSegment = 6;
                     break;
                 case 3:
                     // Score the cone
@@ -290,6 +290,8 @@ public class AutoFTCLib extends LinearOpMode {
                     pathSegment = 6;
                     break;
                 case 6:
+                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
+                    sleep(500);
                     telemetry.addData("Status", "Path complete.");
                     telemetry.update();
                     break;
@@ -576,9 +578,9 @@ public class AutoFTCLib extends LinearOpMode {
         }
 
         stopAllMotors();
-//        while (opModeIsActive() &&
-//                !isStopRequested())
-//            sendTelemetry();
+        while (opModeIsActive() &&
+                !isStopRequested())
+            sendTelemetry();
 
     }
 

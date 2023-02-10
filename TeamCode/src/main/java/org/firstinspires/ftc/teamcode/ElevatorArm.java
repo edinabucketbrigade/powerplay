@@ -36,7 +36,7 @@ public class ElevatorArm {
     static final int MEDIUM_JUNCTION = 27;
     static final int HIGH_JUNCTION = 37;
     static final int HOME_POSITION = 0;
-    static final int CONE_HEIGHT = 5;
+    static final int CONE_HEIGHT = 7;
     static final int ADJUST_ARM_INCREMENT = 1;
     // position in ticks.
     private int armPosition;
