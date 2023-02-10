@@ -1,11 +1,9 @@
 package org.firstinspires.ftc.teamcode;
 
 
-import com.arcrobotics.ftclib.controller.wpilibcontroller.SimpleMotorFeedforward;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.arcrobotics.ftclib.hardware.SimpleServo;
-import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -26,10 +24,8 @@ import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvWebcam;
 
-import java.util.List;
-
-@Autonomous(name = "State Auto", group = "FtcLib")
-//@Autonomous(name = "State Auto", group = "FtcLib", preselectTeleOp = "PowerPlayDc")
+//@Autonomous(name = "State Auto", group = "FtcLib")
+@Autonomous(name = "State Auto", group = "FtcLib", preselectTeleOp = "OldTele")
 public class AutoFTCLib extends LinearOpMode {
     // Calculate the COUNTS_PER_INCH for your specific drive train.
     // Go to your motor vendor website to determine your motor's COUNTS_PER_MOTOR_REV
@@ -42,10 +38,10 @@ public class AutoFTCLib extends LinearOpMode {
     static final double DRIVE_SPEED = 0.4;         // Max driving speed for better distance accuracy.
     static final double TURN_SPEED = 0.4;
     // These are for GoBilda 435 motors
-    static final double MOTOR_RPM = 425;
+    static final double MOTOR_RPM = 435;
     static double COUNTS_PER_MOTOR_REV = 383.6;
 
-    //TODO: These are for TorqweNado 20:1
+    //TODO: These are for TorqweNado 20:1. Use for robot with these motors on drive train
     //    static final double MOTOR_RPM = 300;
     //    static double COUNTS_PER_MOTOR_REV = 480;
     static double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
@@ -56,53 +52,45 @@ public class AutoFTCLib extends LinearOpMode {
     // Increase these numbers if the heading does not corrects strongly enough (eg: a heavy robot or using tracks)
     // Decrease these numbers if the heading does not settle on the correct value (eg: very agile robot with omni wheels)
     static final double P_TURN_GAIN = 0.0009;     // Larger is more responsive, but also less stable
-    static final double P_DRIVE_GAIN = 0.03;     // Larger is more responsive, but also less stable
+    static final double P_DRIVE_GAIN = 0.02;     // Larger is more responsive, but also less stable
     // How close must the heading get to the target before moving to next step.
     // Requiring more accuracy (a smaller number) will often make the turn take longer to get into the final position.
     static final double HEADING_THRESHOLD = .8;
-    static final double MOTOR_POSITION_COEFFICIENT = 10;
-
-    // Arm related
-    static final double ARM_DRIVE_REDUCTION = 1.75;
-    static final double ARM_WHEEL_DIAMETER_INCHES = 2.5;
-    static final double ARM_MOTOR_RPM = 300;
-    static final double ARM_COUNTS_PER_MOTOR_REV = 480;   // TorqueNADO 20:1
-    static final double ARM_COUNTS_PER_WHEEL_REV = (ARM_COUNTS_PER_MOTOR_REV * ARM_DRIVE_REDUCTION);
-    static final double ARM_COUNTS_PER_INCH = ARM_COUNTS_PER_WHEEL_REV / (ARM_WHEEL_DIAMETER_INCHES * 3.1415);
-    private double TPS = ((ARM_MOTOR_RPM * .75) / 60) * ARM_COUNTS_PER_WHEEL_REV;
-    static final int LOW_JUNCTION = 17;
-    static final int MEDIUM_JUNCTION = 27;
-    static final int HIGH_JUNCTION = 37;
-    static final int HOME_POSITION = 0;
-    static final int CONE_HEIGHT = 5;
-    static final int ADJUST_ARM_INCREMENT = 1;
+    static final double MOTOR_POSITION_COEFFICIENT = 30;
+    static final int MOTOR_TARGET_POSITION_TOLERANCE = 20;
+    private ElevatorArm elevatorArm;
     //     These set the range for the gripper servo.
     static final double GRIPPER_MIN_ANGLE = 0;
     static final double GRIPPER_MAX_ANGLE = 180;
     // These set the open and close positions
-    static final double GRIPPER_OPEN = 25;
-    static final double GRIPPER_CLOSED = 73;
+    static final double GRIPPER_OPEN = 153;
+    static final double GRIPPER_CLOSED = 23;
     static final double MAX_POWER = 0.4;
+    // Strategy variables
+    // Path state
     private int pathSegment;
+    // Where do we start
     private StartPosition startPosition = StartPosition.NONE;
-    private int STRAFE_TIMEOUT = 3;     //Time to wait for strafing to finish.
+    // Signal zone parking location
+    private SleeveDetection.ParkingPosition parkLocation;
+    // The junction to score a cone
+    private ScoreJunction scoreJunction = ScoreJunction.NONE;
+    // Delay before starting autonomous
+    private int startDelaySeconds = 0;
     private SleeveDetection sleeveDetection;
+    private int STRAFE_TIMEOUT = 3;     //Time to wait for strafing to finish.
+    // Adjust this for fine tuning drive and strafe distnaces
+    private double TILE_SIZE = 30;
     private OpenCvWebcam camera;
     private IMU imu;
     private GamepadEx gamePadDrive;
     private String WEB_CAM_NAME = "Webcam 1";
-    private SleeveDetection.ParkingPosition parkLocation;
     private DcMotorEx backLeftDrive;
     private DcMotorEx backRightDrive;
     private DcMotorEx frontLeftDrive;
     private DcMotorEx frontRightDrive;
     private DcMotorEx armMotor = null;
-    //TODO: Test this to see if it adds anything
-    //    private SimpleMotorFeedforward simpleFeedForward;
     private SimpleServo gripperServo;
-    private int armTarget = 0;
-    private int armPosition = 0;
-    private double armVelocity = 0;
     private int backLeftTarget = 0;
     private int backRightTarget = 0;
     private int frontLeftTarget = 0;
@@ -129,13 +117,6 @@ public class AutoFTCLib extends LinearOpMode {
      */
     @Override
     public void runOpMode() {
-        // Bulk reads
-        List<LynxModule> allHubs = hardwareMap.getAll(LynxModule.class);
-        // Important: Set all Expansion hubs to use the AUTO Bulk Caching mode
-        for (LynxModule module : allHubs) {
-            module.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
-        }
-
         imu = hardwareMap.get(IMU.class, "imu");
         RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;
         RevHubOrientationOnRobot.UsbFacingDirection usbDirection = RevHubOrientationOnRobot.UsbFacingDirection.UP;
@@ -166,7 +147,8 @@ public class AutoFTCLib extends LinearOpMode {
 
         armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
         armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        // Arm functions are handled by elevatorArm
+        elevatorArm = new ElevatorArm(armMotor, this);
 
         backLeftDrive = hardwareMap.get(DcMotorEx.class, "Backleft");
         backRightDrive = hardwareMap.get(DcMotorEx.class, "Backright");
@@ -182,15 +164,14 @@ public class AutoFTCLib extends LinearOpMode {
         backRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         frontRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
-
-        //TODO: Maybe this will help. Test it.
-        // simpleFeedForward = new SimpleMotorFeedforward(2, 10);
 
         gripperServo = new SimpleServo(hardwareMap, "GripperServo", GRIPPER_MIN_ANGLE, GRIPPER_MAX_ANGLE);
+//        gripperServo.setInverted(true);
+//TODO: Enable this line after testing resetArmPosition().
+//        elevatorArm.resetArmPosition();
         openGripper();
 
-        // Choose your start position.
+        // Choose your start position, junction to score and any delay.
         while (!isStarted() &&
                 !gamePadDrive.wasJustPressed(GamepadKeys.Button.START) &&
                 !isStopRequested()) {
@@ -207,21 +188,65 @@ public class AutoFTCLib extends LinearOpMode {
                 telemetry.update();
             }
 
-            telemetry.addLine("Select start position");
-            telemetry.addLine("X=Left, B=Right, Start=Adjust Camera");
-            telemetry.addData("Position:", startPosition);
+            if (gamePadDrive.wasJustPressed(GamepadKeys.Button.DPAD_UP)) {
+                scoreJunction = scoreJunction.getNext();
+                switch (scoreJunction) {
+                    case MEDIUM:
+                        telemetry.speak("Medium");
+                        break;
+                    case NONE:
+                        telemetry.speak("None");
+                        break;
+                }
+                telemetry.update();
+            }
+
+            if (gamePadDrive.wasJustPressed(GamepadKeys.Button.LEFT_BUMPER)) {
+                startDelaySeconds -= 1;
+                // Wrap to +15 (a reasonable upper limit?)
+                startDelaySeconds = startDelaySeconds < 0 ? 15 : startDelaySeconds;
+            }
+
+            if (gamePadDrive.wasJustPressed(GamepadKeys.Button.RIGHT_BUMPER)) {
+                startDelaySeconds += 1;
+                // Wrap back to 0 when you hit 15
+                startDelaySeconds = startDelaySeconds > 15 ? 0 : startDelaySeconds;
+            }
+
+            telemetry.addLine("Select Start Options");
+            telemetry.addLine("X=Start Left, B=Start Right");
+            telemetry.addLine("Dpad Up to toggle cone junction");
+            telemetry.addLine("Bumper left/right to select delay");
+            telemetry.addLine("Press Start to Adjust Camera\n");
+            telemetry.addData("Position", startPosition);
+            telemetry.addData("Junction", scoreJunction);
+            telemetry.addData("Delay", startDelaySeconds);
             telemetry.update();
         }
 
         // Adjust the camera here.
+        telemetry.speak("Adjust the camera.");
+        telemetry.update();
+
         while (!isStarted() && !isStopRequested()) {
             parkLocation = getParkLocation();
+            telemetry.addLine("Adjust the camera, then wait for the countdown.\n");
             telemetry.addData("Start Position:", startPosition);
             telemetry.addData("Park Location:", parkLocation);
             telemetry.update();
         }
 
         waitForStart();
+        // Pause, if selected by driver.
+        if (startDelaySeconds > 0) {
+            resetRuntime();
+            while (getRuntime() < startDelaySeconds) {
+                telemetry.addData("Start Delay", getRuntime());
+                telemetry.update();
+            }
+        }
+        // Assume arm is physically at it's lowest position.
+        elevatorArm.resetEncoder();
         // Save processing time, we are finished with the camera.
         camera.stopStreaming();
         camera.closeCameraDevice();
@@ -231,64 +256,42 @@ public class AutoFTCLib extends LinearOpMode {
             switch (pathSegment) {
                 case 1:
                     closeGripper();
-                    driveStraight(DRIVE_SPEED, 36, 0, 3);
+                    driveStraight(DRIVE_SPEED, TILE_SIZE * 1.25, 0, 3);
                     sleep(750);
-                    pathSegment = 7;
+                    pathSegment = scoreJunction == ScoreJunction.MEDIUM ? 2 : 4;
                     break;
                 case 2:
-                    if (startPosition == StartPosition.RIGHT) {
-                        turnToHeading(TURN_SPEED, -90, 3);
-                    }
-                    if (startPosition == StartPosition.LEFT) {
-                        turnToHeading(TURN_SPEED, 90, 3);
+                    // Park in signal zone
+                    switch (startPosition) {
+                        case LEFT:
+                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.4), 270, STRAFE_TIMEOUT);
+                            break;
+                        case RIGHT:
+                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.4), 90, STRAFE_TIMEOUT);
+                            break;
                     }
                     sleep(750);
-                    pathSegment = 3;
+                    //TODO: move closer to the junction?
+                    pathSegment = 6;
                     break;
                 case 3:
-                    if (startPosition == StartPosition.RIGHT) {
-                        driveStraight(DRIVE_SPEED, 24, -90, 3);
-                    }
-                    if (startPosition == StartPosition.LEFT) {
-                        driveStraight(DRIVE_SPEED, 24, 90, 3);
-                    }
+                    // Score the cone
+                    elevatorArm.moveArm(ElevatorArm.ArmPosition.MEDIUM);
+                    openGripper();
+                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
                     sleep(750);
+                    //TODO: re-position to center of tile
                     pathSegment = 4;
                     break;
                 case 4:
-                    moveArm(ArmPosition.HIGH);
-                    openGripper();
-                    moveArm(ArmPosition.HOME);
-                    pathSegment = 5;
-                    break;
-                case 5:
-                    moveArm(ArmPosition.HOME);
-                    sleep(500);
-                    if (startPosition == StartPosition.RIGHT) {
-                        turnToHeading(TURN_SPEED, 90, 3);
-                    }
-                    if (startPosition == StartPosition.LEFT) {
-                        turnToHeading(TURN_SPEED, -90, 3);
-                    }
-                    sleep(750);
-                    driveStraight(DRIVE_SPEED, -60, 0, 3);
+                    // Where did the camera tell us to park?
+                    double[] signalZonePath = getSignalZonePath();
+                    strafeRobot(DRIVE_SPEED, signalZonePath[1], signalZonePath[0], STRAFE_TIMEOUT);
                     pathSegment = 6;
                     break;
                 case 6:
-                    // Where did the camera tell us to park?
-                    switch (parkLocation) {
-                        case LEFT:
-                            strafeRobot(DRIVE_SPEED, 24, 270, STRAFE_TIMEOUT);
-                            break;
-                        case CENTER:
-                            break;
-                        case RIGHT:
-                            strafeRobot(DRIVE_SPEED, 24, 90, STRAFE_TIMEOUT);
-                            break;
-                    }
-                    pathSegment = 7;
-                    break;
-                case 7:
+                    elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
+                    sleep(500);
                     telemetry.addData("Status", "Path complete.");
                     telemetry.update();
                     break;
@@ -339,8 +342,14 @@ public class AutoFTCLib extends LinearOpMode {
         getCurrentPositionsFromMotors();
         backLeftTarget = backLeftPosition + moveCounts;
         backRightTarget = backRightPosition + moveCounts;
-        frontLeftTarget = backLeftTarget + moveCounts;
-        frontRightTarget = backRightTarget + moveCounts;
+        frontLeftTarget = frontLeftTarget + moveCounts;
+        frontRightTarget = frontRightTarget + moveCounts;
+
+//        telemetry.addData("backLeftTarget", backLeftTarget);
+//        telemetry.addData("backRightTarget", backRightTarget);
+//        telemetry.addData("frontLeftTarget", frontLeftTarget);
+//        telemetry.addData("frontRightTarget", frontRightTarget);
+//        telemetry.update();
 
         // Set Target FIRST, then turn on RUN_TO_POSITION
         backLeftDrive.setTargetPosition(backLeftTarget);
@@ -350,8 +359,9 @@ public class AutoFTCLib extends LinearOpMode {
 
         // Set SDK Pidf values
         setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
-//        setMotorVelocityCoefficients();
 //        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
+//        setMotorVelocityCoefficients();
+        setMotorsPositionTolerance();
 
         // Set the required driving speed  (must be positive for RUN_TO_POSITION)
         // Start driving straight, and then enter the control loop
@@ -365,7 +375,7 @@ public class AutoFTCLib extends LinearOpMode {
                 (driveTimer.time() < driveTime)) {
 
             // Determine required steering to keep on heading
-//            turnSpeed = getSteeringCorrection(heading, P_DRIVE_GAIN);
+            turnSpeed = getSteeringCorrection(heading, P_DRIVE_GAIN);
 
             // if driving in reverse, the motor correction also needs to be reversed
             if (distance < 0)
@@ -394,7 +404,6 @@ public class AutoFTCLib extends LinearOpMode {
 
         setMotorsMode(DcMotor.RunMode.RUN_USING_ENCODER);
         setMotorVelocityCoefficients();
-        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
 
         // Run getSteeringCorrection() once to pre-calculate the current error
         getSteeringCorrection(heading, P_DRIVE_GAIN);
@@ -493,8 +502,8 @@ public class AutoFTCLib extends LinearOpMode {
         driveSpeed = drive;     // save this value as a class member so it can be used by telemetry.
         turnSpeed = turn;      // save this value as a class member so it can be used by telemetry.
 
-        leftSpeed = drive + turn;
-        rightSpeed = drive - turn;
+        leftSpeed = drive - turn;
+        rightSpeed = drive + turn;
 
         // Scale speeds down if either one exceeds +/- 1.0;
         double max = Math.max(Math.abs(leftSpeed), Math.abs(rightSpeed));
@@ -503,14 +512,10 @@ public class AutoFTCLib extends LinearOpMode {
             rightSpeed /= max;
         }
 
-        backLeftDrive.setPower(leftSpeed);
-        backRightDrive.setPower(rightSpeed);
-        frontLeftDrive.setPower(leftSpeed);
-        frontRightDrive.setPower(rightSpeed);
-//        backLeftDrive.setVelocity(powerToTPS(leftSpeed));
-//        backRightDrive.setVelocity(powerToTPS(rightSpeed));
-//        frontLeftDrive.setVelocity(powerToTPS(leftSpeed));
-//        frontRightDrive.setVelocity(powerToTPS(rightSpeed));
+        backLeftDrive.setVelocity(powerToTPS(leftSpeed));
+        backRightDrive.setVelocity(powerToTPS(rightSpeed));
+        frontLeftDrive.setVelocity(powerToTPS(leftSpeed));
+        frontRightDrive.setVelocity(powerToTPS(rightSpeed));
 
 //        getVelocityFromMotors();
 //        backLeftDrive.setVelocity(simpleFeedForward.calculate(backLeftVelocity));
@@ -534,8 +539,7 @@ public class AutoFTCLib extends LinearOpMode {
         strafeTimer.reset();
         setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         targetHeading = heading;
-        int moveCounts = (int) (distance * COUNTS_PER_INCH);
-        getCurrentPositionsFromMotors();
+        int moveCounts = (int) ((distance * COUNTS_PER_INCH));
         backLeftTarget = backLeftPosition + moveCounts;
         backRightTarget = backRightPosition + moveCounts;
         frontLeftTarget = frontLeftPosition + moveCounts;
@@ -556,20 +560,28 @@ public class AutoFTCLib extends LinearOpMode {
         frontRightDrive.setTargetPosition(frontRightTarget);
 
         setMotorsMode(DcMotor.RunMode.RUN_TO_POSITION);
+//        setMotorsPositionCoefficients(MOTOR_POSITION_COEFFICIENT);
+//        setMotorsPositionTolerance();
+        backLeftDrive.setVelocity(powerToTPS(strafeSpeed));
+        backRightDrive.setVelocity(powerToTPS(strafeSpeed));
+        frontLeftDrive.setVelocity(powerToTPS(strafeSpeed));
+        frontRightDrive.setVelocity(powerToTPS(strafeSpeed));
 
         while (opModeIsActive() &&
                 !isStopRequested() &&
-                (backLeftDrive.isBusy() &&
-                        backRightDrive.isBusy() &&
-                        frontLeftDrive.isBusy() &&
-                        frontRightDrive.isBusy()) &&
-                (strafeTimer.seconds() < strafeTime)) {
-            backLeftDrive.setPower(strafeSpeed);
-            backRightDrive.setPower(strafeSpeed);
-            frontLeftDrive.setPower(strafeSpeed);
-            frontRightDrive.setPower(strafeSpeed);
+                backLeftDrive.isBusy() &&
+                backRightDrive.isBusy() &&
+                frontLeftDrive.isBusy() &&
+                frontRightDrive.isBusy()) {
             sendTelemetry();
+            idle();
         }
+
+        stopAllMotors();
+        while (opModeIsActive() &&
+                !isStopRequested())
+            sendTelemetry();
+
     }
 
     /**
@@ -592,9 +604,6 @@ public class AutoFTCLib extends LinearOpMode {
         telemetry.addData("Angle Target:Current", "%5.2f:%5.0f", targetHeading, robotHeading);
         telemetry.addData("Error:Steer", "%5.1f:%5.1f", headingError, turnSpeed);
         telemetry.addData("Wheel Speeds L:R.", "%5.2f : %5.2f", leftSpeed, rightSpeed);
-        telemetry.addData("Arm Target", armTarget);
-        telemetry.addData("Arm Position", armPosition);
-        telemetry.addData("Arm Velocity", armVelocity);
         telemetry.update();
     }
 
@@ -625,6 +634,14 @@ public class AutoFTCLib extends LinearOpMode {
         backRightDrive.setPositionPIDFCoefficients(PositionCoefficent);
         frontLeftDrive.setPositionPIDFCoefficients(PositionCoefficent);
         frontRightDrive.setPositionPIDFCoefficients(PositionCoefficent);
+    }
+
+    public void setMotorsPositionTolerance() {
+        backLeftDrive.setTargetPositionTolerance(MOTOR_TARGET_POSITION_TOLERANCE);
+        backRightDrive.setTargetPositionTolerance(MOTOR_TARGET_POSITION_TOLERANCE);
+        frontLeftDrive.setTargetPositionTolerance(MOTOR_TARGET_POSITION_TOLERANCE);
+        frontRightDrive.setTargetPositionTolerance(MOTOR_TARGET_POSITION_TOLERANCE);
+
     }
 
     public void setMotorVelocityCoefficients() {
@@ -658,51 +675,6 @@ public class AutoFTCLib extends LinearOpMode {
         robotHeading = 0;
     }
 
-    public void moveArm(ArmPosition position) {
-
-        armPosition = armMotor.getCurrentPosition();
-        switch (position) {
-            case HOME:
-                armTarget = HOME_POSITION * (int) ARM_COUNTS_PER_INCH;
-                break;
-            case LOW:
-                armTarget = (LOW_JUNCTION * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case MEDIUM:
-                armTarget = (MEDIUM_JUNCTION * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case HIGH:
-                armTarget = (HIGH_JUNCTION * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case ADJUST_UP:
-                armTarget = armPosition + (ADJUST_ARM_INCREMENT * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case ADJUST_DOWN:
-                armTarget = armPosition - (ADJUST_ARM_INCREMENT * (int) ARM_COUNTS_PER_INCH);
-                break;
-            case CONE_HEIGHT:
-                armTarget = armPosition + CONE_HEIGHT * (int) ARM_COUNTS_PER_INCH;
-                break;
-            default:
-                armTarget = 0;
-        }
-
-        // Prevent arm moving below HOME_POSITION
-        armTarget = Math.max(armTarget, HOME_POSITION * (int) ARM_COUNTS_PER_INCH);
-        armMotor.setTargetPosition(armTarget);
-        armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-        armMotor.setVelocityPIDFCoefficients(1.09, 0.109, 0, 10.9);
-        armMotor.setPositionPIDFCoefficients(20);
-        armMotor.setTargetPositionTolerance(10);
-        armMotor.setVelocity(TPS);
-
-        while (armMotor.isBusy() && !isStopRequested()) {
-            armVelocity = armMotor.getVelocity();
-            armPosition = armMotor.getCurrentPosition();
-            sendTelemetry();
-        }
-    }
-
     /**
      * Convert power to velocity.
      * double TPS = (power/60) * COUNTS_PER_MOTOR_REV;
@@ -715,29 +687,92 @@ public class AutoFTCLib extends LinearOpMode {
         return ((power * MOTOR_RPM) / 60) * COUNTS_PER_MOTOR_REV;
     }
 
+    /**
+     * Get the distance and direction parameters for strafeRobot()
+     * to park in the correct signal zone.
+     *
+     * @return double[] - [0] os the direction, [1] is the distance
+     */
+    public double[] getSignalZonePath() {
+        double[] result;
+        double direction = 0;
+        double distance = 0;
+        // No junction, robot is on the signal sleeve tape mark
+        if (scoreJunction == ScoreJunction.NONE) {
+            switch (parkLocation) {
+                case LEFT:
+                    direction = 270;
+                    distance = TILE_SIZE;
+                    break;
+                case CENTER:
+                    direction = 0;
+                    distance = 0;
+                    break;
+                case RIGHT:
+                    direction = 90;
+                    distance = TILE_SIZE;
+                    break;
+            }
+        }
+        // Scoring medium junction, robot is centered on the tile in front of the medium junction
+        if (scoreJunction == ScoreJunction.MEDIUM) {
+            switch (startPosition) {
+                case LEFT:
+                    direction = 270;
+                    switch (parkLocation) {
+                        case LEFT:
+                            distance = TILE_SIZE * 2.5;
+                            break;
+                        case CENTER:
+                            distance = TILE_SIZE * 1.5;
+                            break;
+                        case RIGHT:
+                            distance = TILE_SIZE * .5;
+                            break;
+                    }
+                    break;
+                case RIGHT:
+                    direction = 90;
+                    switch (parkLocation) {
+                        case LEFT:
+                            distance = TILE_SIZE * .5;
+                            break;
+                        case CENTER:
+                            distance = TILE_SIZE * 1.5;
+                            break;
+                        case RIGHT:
+                            distance = TILE_SIZE * 2.5;
+                            break;
+                    }
+                    break;
+            }
+        }
+        result = new double[]{direction, distance};
+        return result;
+    }
+
     public void openGripper() {
         gripperServo.turnToAngle(GRIPPER_OPEN);
     }
 
     public void closeGripper() {
         gripperServo.turnToAngle(GRIPPER_CLOSED);
-        moveArm(ArmPosition.CONE_HEIGHT);
-    }
-
-
-    public enum ArmPosition {
-        HOME,
-        LOW,
-        MEDIUM,
-        HIGH,
-        ADJUST_UP,
-        ADJUST_DOWN,
-        CONE_HEIGHT
+        sleep(100);
     }
 
     public enum StartPosition {
         RIGHT,
         LEFT,
         NONE
+    }
+
+    // Which junction to score cone (assume only 1 cone)
+    public enum ScoreJunction {
+        MEDIUM,
+        NONE;
+
+        public ScoreJunction getNext() {
+            return values()[(ordinal() + 1) % values().length];
+        }
     }
 }

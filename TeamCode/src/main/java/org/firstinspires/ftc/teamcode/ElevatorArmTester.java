@@ -31,12 +31,12 @@ package org.firstinspires.ftc.teamcode;
 
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
 /**
  * Op mode to test ElevatorArm classs.
@@ -56,6 +56,10 @@ public class ElevatorArmTester extends OpMode {
         armMotor = hardwareMap.get(DcMotorEx.class, "ArmMotor");
         elevatorArm = new ElevatorArm(armMotor, this);
         gamePadArm = new GamepadEx(gamepad2);
+        telemetry.addLine("Game pad keys are the same as tele.");
+        telemetry.addLine("The right bumper will reset the arm.");
+        telemetry.addLine("Ready for start.");
+        telemetry.update();
     }
 
     /*
@@ -73,7 +77,6 @@ public class ElevatorArmTester extends OpMode {
     @Override
     public void start() {
         runtime.reset();
-        elevatorArm.moveArm(ElevatorArm.ArmPosition.HOME);
     }
 
     /*
@@ -86,7 +89,8 @@ public class ElevatorArmTester extends OpMode {
         telemetry.addData("Status", "Run Time: " + runtime.toString());
         ProcessArm();
         telemetry.addData("Arm Position", elevatorArm.getArmPosition());
-        telemetry.addData("Tolerance", elevatorArm.getPositionTolerance());
+        telemetry.addData("Position Tolerance", elevatorArm.getPositionTolerance());
+        telemetry.addData("Arm Current (AMPS)", armMotor.getCurrent(CurrentUnit.AMPS));
     }
 
     public void ProcessArm() {
@@ -118,6 +122,12 @@ public class ElevatorArmTester extends OpMode {
         // ground junction
         if (gamePadArm.wasJustPressed(GamepadKeys.Button.X)) {
             position = ElevatorArm.ArmPosition.HOME;
+        }
+
+        // Reset the arm.
+        if (gamePadArm.wasJustPressed(GamepadKeys.Button.RIGHT_BUMPER)) {
+            elevatorArm.resetArmPosition();
+            return;
         }
 
         if (position != null) {
