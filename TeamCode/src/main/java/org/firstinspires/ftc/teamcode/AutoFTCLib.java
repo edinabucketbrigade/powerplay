@@ -25,7 +25,7 @@ import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvWebcam;
 
 //@Autonomous(name = "State Auto", group = "FtcLib")
-@Autonomous(name = "State Auto", group = "FtcLib", preselectTeleOp = "PowerPlayDCJava")
+@Autonomous(name = "State Auto", group = "FtcLib", preselectTeleOp = "OldTele")
 public class AutoFTCLib extends LinearOpMode {
     // Calculate the COUNTS_PER_INCH for your specific drive train.
     // Go to your motor vendor website to determine your motor's COUNTS_PER_MOTOR_REV

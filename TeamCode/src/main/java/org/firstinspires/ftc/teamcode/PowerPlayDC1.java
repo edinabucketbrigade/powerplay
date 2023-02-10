@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.JavaUtil;
 
-@TeleOp(name = "OldSTele")
+@TeleOp(name = "OldTele")
 //@Disabled
 public class PowerPlayDC1 extends LinearOpMode {
 
