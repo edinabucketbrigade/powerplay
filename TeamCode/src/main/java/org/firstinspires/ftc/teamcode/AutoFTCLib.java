@@ -251,7 +251,7 @@ public class AutoFTCLib extends LinearOpMode {
         camera.stopStreaming();
         camera.closeCameraDevice();
 
-        pathSegment = 2;
+        pathSegment = 1;
         while (opModeIsActive() && !isStopRequested()) {
             switch (pathSegment) {
                 case 1:
@@ -264,10 +264,10 @@ public class AutoFTCLib extends LinearOpMode {
                     // Park in signal zone
                     switch (startPosition) {
                         case LEFT:
-                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.5), 270, STRAFE_TIMEOUT);
+                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.4), 270, STRAFE_TIMEOUT);
                             break;
                         case RIGHT:
-                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.5), 90, STRAFE_TIMEOUT);
+                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.4), 90, STRAFE_TIMEOUT);
                             break;
                     }
                     sleep(750);
@@ -758,7 +758,6 @@ public class AutoFTCLib extends LinearOpMode {
     public void closeGripper() {
         gripperServo.turnToAngle(GRIPPER_CLOSED);
         sleep(100);
-        elevatorArm.moveArm(ElevatorArm.ArmPosition.CONE_HEIGHT);
     }
 
     public enum StartPosition {
