@@ -191,9 +191,6 @@ public class AutoFTCLib extends LinearOpMode {
             if (gamePadDrive.wasJustPressed(GamepadKeys.Button.DPAD_UP)) {
                 scoreJunction = scoreJunction.getNext();
                 switch (scoreJunction) {
-                    case LOW:
-                        telemetry.speak("Low");
-                        break;
                     case MEDIUM:
                         telemetry.speak("Medium");
                         break;
@@ -770,7 +767,6 @@ public class AutoFTCLib extends LinearOpMode {
 
     // Which junction to score cone (assume only 1 cone)
     public enum ScoreJunction {
-        LOW,
         MEDIUM,
         NONE;
 
