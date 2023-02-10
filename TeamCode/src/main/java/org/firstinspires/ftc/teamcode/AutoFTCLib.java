@@ -63,8 +63,8 @@ public class AutoFTCLib extends LinearOpMode {
     static final double GRIPPER_MIN_ANGLE = 0;
     static final double GRIPPER_MAX_ANGLE = 180;
     // These set the open and close positions
-    static final double GRIPPER_OPEN = 25;
-    static final double GRIPPER_CLOSED = 73;
+    static final double GRIPPER_OPEN = 153;
+    static final double GRIPPER_CLOSED = 23;
     static final double MAX_POWER = 0.4;
     // Strategy variables
     // Path state
@@ -166,6 +166,7 @@ public class AutoFTCLib extends LinearOpMode {
         setMotorsMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         gripperServo = new SimpleServo(hardwareMap, "GripperServo", GRIPPER_MIN_ANGLE, GRIPPER_MAX_ANGLE);
+//        gripperServo.setInverted(true);
 //TODO: Enable this line after testing resetArmPosition().
 //        elevatorArm.resetArmPosition();
         openGripper();

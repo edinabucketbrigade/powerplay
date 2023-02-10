@@ -22,7 +22,7 @@ public class ElevatorArm {
         armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armFeedForward = new ElevatorFeedforward(12, 20, 5);
-        digitalTouch = opMode.hardwareMap.get(DigitalChannel.class, "touch");
+//        digitalTouch = opMode.hardwareMap.get(DigitalChannel.class, "touch");
     }
 
     static final double ARM_DRIVE_REDUCTION = 1.75;
@@ -81,14 +81,15 @@ public class ElevatorArm {
         armMotor.setTargetPosition(armTarget);
         armMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
 //        armMotor.setVelocityPIDFCoefficients(1.09, 0.109, 0, 10.9);
-//        armMotor.setPositionPIDFCoefficients(20);
-        armMotor.setTargetPositionTolerance(10);
+//        armMotor.setPositionPIDFCoefficients(10);
+        armMotor.setTargetPositionTolerance(25);
         armMotor.setVelocity(TPS);
 
         while (armMotor.isBusy()) {
             armVelocity = armMotor.getVelocity();
-            feedForwardCalculate = armFeedForward.calculate(armVelocity);
-            armMotor.setVelocity(feedForwardCalculate);
+//            feedForwardCalculate = armFeedForward.calculate(armVelocity);
+//            armMotor.setVelocity(feedForwardCalculate);
+            armMotor.setVelocity(TPS);
             armVelocity = armMotor.getVelocity();
             armPosition = armMotor.getCurrentPosition();
             armCurrent = armMotor.getCurrent(CurrentUnit.AMPS);

@@ -17,8 +17,8 @@ public class PowerPlayDC extends LinearOpMode {
     static final double GRIPPER_MIN_ANGLE = 0;
     static final double GRIPPER_MAX_ANGLE = 180;
     // These set the open and close positions
-    static final double GRIPPER_OPEN = 25;
-    static final double GRIPPER_CLOSED = 73;
+    static final double GRIPPER_OPEN = 153;
+    static final double GRIPPER_CLOSED = 23;
     private DcMotorEx armMotor = null;
     private ElevatorArm elevatorArm;
     private GamepadEx gamePadArm;
