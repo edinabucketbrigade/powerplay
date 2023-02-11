@@ -267,10 +267,10 @@ public class AutoFTCLib extends LinearOpMode {
                     // Strafe from signal zone tape
                     switch (startPosition) {
                         case LEFT:
-                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 0.5), 90, STRAFE_TIMEOUT);
+                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.5), 90, STRAFE_TIMEOUT);
                             break;
                         case RIGHT:
-                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 0.5), 270, STRAFE_TIMEOUT);
+                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.5), 270, STRAFE_TIMEOUT);
                             break;
                     }
 
@@ -293,10 +293,10 @@ public class AutoFTCLib extends LinearOpMode {
                     // Go back to center
                     switch (startPosition) {
                         case LEFT:
-                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 0.5), 270, STRAFE_TIMEOUT);
+                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.5), 270, STRAFE_TIMEOUT);
                             break;
                         case RIGHT:
-                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 0.5), 90, STRAFE_TIMEOUT);
+                            strafeRobot(DRIVE_SPEED, (TILE_SIZE * 1.5), 90, STRAFE_TIMEOUT);
                             break;
                     }
                     // go park
