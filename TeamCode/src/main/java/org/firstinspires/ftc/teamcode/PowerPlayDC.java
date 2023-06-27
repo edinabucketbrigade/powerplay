@@ -36,7 +36,7 @@ public class PowerPlayDC extends LinearOpMode {
 //Whole Code Notes: Look at block code for denominator info.
 
     public void runOpMode() {
-        double maxPower = .7;
+        double maxPower = 1;
         double y;
         double x;
         double rx;
